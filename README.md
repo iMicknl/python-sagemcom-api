@@ -1,6 +1,6 @@
 # python-sagemcom-api (WIP)
 
-Python wrapper to interact with SagemCom F@st routers internal API's.
+Python wrapper to interact with SagemCom F@st routers via internal API's. This package is utilizing async/await, thus required Pyton 3.7+.
 
 ## Features
 
@@ -10,19 +10,20 @@ Python wrapper to interact with SagemCom F@st routers internal API's.
 
 ## Supported devices
 
-| Router Model         | Provider(s)      | Authentication Method |
-| -------------------- | ---------------- | --------------------- |
-| Sagemcom F@st 3890V3 | Delta/Zeelandnet | md5                   |
-| Sagemcom F@st 3864   | Optus            | sha512                |
-| Sagemcom F@st 5280   |                  | sha512                |
-| Sagemcom F@st 5364   | BT (Smart Hub)   | md5                   |
-| Sagemcom F@st 5370e  | Telia            | sha512                |
+| Router Model         | Provider(s)        | Authentication Method |
+| -------------------- | ------------------ | --------------------- |
+| Sagemcom F@st 3864   | Optus              | sha512                |
+| Sagemcom F@st 3890V3 | Delta (Zeelandnet) | md5                   |
+| Sagemcom F@st 5280   |                    | sha512                |
+| Sagemcom F@st 5364   | BT (Smart Hub)     | md5                   |
+| Sagemcom F@st 5370e  | Telia              | sha512                |
+| Sagemcom F@st 5655V2 | MásMóvil           | md5                   |
 
 _Other Sagemcom F@st router models could possibly be supported, please create an issue if you have a device which doesn't work out of the box with this package._
 
 ## Installation
 
-_This package has not been published on PyPi yet, clone this repository to get started._
+_This package has not been published on PyPi yet since it is a work in progress, clone this repository to get started._
 
 ```bash
 pip install sagemcom-api
@@ -45,12 +46,11 @@ async def main():
         device_info = await sagemcom.get_device_info()
         print(device_info)
 
-loop = asyncio.get_event_loop()
-loop.run_until_complete(main())
+asyncio.run(main())
 ```
 
 ## Related
 
-[wuseman/SAGEMCOM-FAST-5370e-TELIA](https://github.com/wuseman/SAGEMCOM-FAST-5370e-TELIA)
-[insou22/optus-router-tools](https://github.com/insou22/optus-router-tools)
-[onegambler/bthomehub_client](https://github.com/onegambler/bthomehub_client)
+- [wuseman/SAGEMCOM-FAST-5370e-TELIA](https://github.com/wuseman/SAGEMCOM-FAST-5370e-TELIA)
+- [insou22/optus-router-tools](https://github.com/insou22/optus-router-tools)
+- [onegambler/bthomehub_client](https://github.com/onegambler/bthomehub_client)
