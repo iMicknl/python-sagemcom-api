@@ -1,7 +1,7 @@
 """ Python wrapper for the Sagemcom API """
 import aiohttp
-import asyncio
 
+import asyncio
 import logging
 import time
 import hashlib
@@ -14,8 +14,8 @@ from enum import Enum
 
 
 class EncryptionMethod(Enum):
-    MD5 = 1
-    SHA512 = 2
+    MD5 = 'md5'
+    SHA512 = 'sha512'
 
 
 class UnauthorizedException(Exception):
@@ -129,7 +129,8 @@ class SagemcomClient(object):
             }
         }
 
-        async with aiohttp.ClientSession() as session:
+        timeout = aiohttp.ClientTimeout(total=30)
+        async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.post(api_host, data="req=" + json.dumps(payload, separators=(',', ':'))) as response:
 
                 # Throw Bad Request expection

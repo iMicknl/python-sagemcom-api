@@ -1,6 +1,6 @@
 # python-sagemcom-api (WIP)
 
-Python wrapper to interact with SagemCom F@st routers via internal API's. This package is utilizing async/await, thus required Pyton 3.7+.
+Unofficial Python wrapper to interact with SagemCom F@st routers via internal API's. This package is utilizing async/await, thus Python 3.7+ is required.
 
 ## Features
 
@@ -24,7 +24,7 @@ The Sagemcom F@st series is in use by multiple cable companies, where some cable
 | Sagemcom F@st 5566   | Bell (Home Hub 3000)  | md5                   |
 | Sagemcom F@st 5655V2 | MásMóvil              | md5                   |
 
-_Other Sagemcom F@st router models could possibly be supported, please create an issue if you have a device which doesn't work out of the box with this package._
+_Other Sagemcom F@st router models could be supported, please create an issue if you have a device which doesn't work out of the box with this package._
 
 ## Installation
 
@@ -36,15 +36,15 @@ pip install sagemcom-api
 
 ## Usage
 
-There are different authentication methods depending on your router model. This package supports MD5 and SHA512.
+Depending on the router model, Sagemcom is using different encryption methods for authentication, which can be found in [the table above](#supported-devices). This package supports MD5 and SHA512 encryption.
 
 ```python
 import asyncio
 from sagemcom_api import SagemcomClient, EncryptionMethod
 
 async def main():
-    # Select EncryptionMethod.MD5 or EncryptionMethod.SHA512
-    sagemcom = Sagemcom_Client('local ip address', 'username',  'password', EncryptionMethod.MD5)
+    # Choose EncryptionMethod.MD5 or EncryptionMethod.SHA512
+    sagemcom = Sagemcom_Client('local ip address', 'username', 'password', EncryptionMethod.MD5)
 
     logged_in = await sagemcom.login()
 
@@ -61,6 +61,7 @@ asyncio.run(main())
 - Add helper function to determine if the model is using MD5 or SHA512 encryption for authentication
 - Add function to pass custom action
 - Add helper function to parse output
+- Document all functions
 
 ## Related
 
