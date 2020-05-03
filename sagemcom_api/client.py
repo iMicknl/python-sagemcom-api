@@ -13,7 +13,7 @@ from collections import namedtuple
 from enum import Enum
 
 
-class AuthenticationMethods(Enum):
+class EncryptionMethod(Enum):
     MD5 = 1
     SHA512 = 2
 
@@ -35,10 +35,10 @@ Device = namedtuple(
                "user_friendly_name", "detected_device_type", "user_device_type"])
 
 
-class Sagemcom_Client(object):
+class SagemcomClient(object):
     """ Interface class for the Sagemcom API """
 
-    def __init__(self, host, username, password, authentication_method=AuthenticationMethods.MD5):
+    def __init__(self, host, username, password, authentication_method=EncryptionMethod.MD5):
         """
         Constructor
 
@@ -71,10 +71,10 @@ class Sagemcom_Client(object):
         """ Hash value with MD5 or SHA12 and return HEX """
         bytes_object = bytes(value, encoding='utf-8')
 
-        if self.authentication_method is AuthenticationMethods.MD5:
+        if self.authentication_method is EncryptionMethod.MD5:
             return hashlib.md5(bytes_object).hexdigest()
 
-        if self.authentication_method is AuthenticationMethods.SHA512:
+        if self.authentication_method is EncryptionMethod.SHA512:
             return hashlib.sha512(bytes_object).hexdigest()
 
         return value
