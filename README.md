@@ -58,12 +58,13 @@ asyncio.run(main())
 ## TODO
 
 - Auto login for the first request
+- Add proper exceptions + handling
 - Add helper function to determine if the model is using MD5 or SHA512 encryption for authentication
 - Add function to pass custom action
 - Add helper function to parse output
 - Document all functions
 
-## Related
+## Inspired by
 
 - [wuseman/SAGEMCOM-FAST-5370e-TELIA](https://github.com/wuseman/SAGEMCOM-FAST-5370e-TELIA)
 - [insou22/optus-router-tools](https://github.com/insou22/optus-router-tools)

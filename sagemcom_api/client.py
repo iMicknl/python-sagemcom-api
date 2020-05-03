@@ -112,6 +112,10 @@ class SagemcomClient(object):
     async def __api_request_async(self, actions, priority=False):
         """ Build request to the internal JSON-req API """
 
+        ## Auto login
+        if self._server_nonce == "" and actions[0]['method'] != "logIn" :
+            await self.login()
+
         self.__generate_request_id()
         self.__generate_nonce()
         self.__generate_auth_key()
@@ -148,6 +152,9 @@ class SagemcomClient(object):
 
                     if (error['description'] != 'XMO_REQUEST_NO_ERR'):
                         print(error)
+
+                        # handle XMO_INVALID_SESSION_ERR
+                        # handle XMO_REQUEST_ACTION_ERR
 
                 return result
 
