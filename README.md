@@ -44,7 +44,7 @@ from sagemcom_api import SagemcomClient, EncryptionMethod
 
 async def main():
     # Choose EncryptionMethod.MD5 or EncryptionMethod.SHA512
-    sagemcom = Sagemcom_Client('local ip address', 'username', 'password', EncryptionMethod.MD5)
+    sagemcom = SagemcomClient('local ip address', 'username', 'password', EncryptionMethod.MD5)
 
     logged_in = await sagemcom.login()
 

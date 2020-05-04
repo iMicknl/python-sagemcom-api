@@ -16,6 +16,7 @@ from enum import Enum
 class EncryptionMethod(Enum):
     MD5 = 'md5'
     SHA512 = 'sha512'
+    UNKNOWN = 'unknown'
 
 
 class UnauthorizedException(Exception):
@@ -112,8 +113,8 @@ class SagemcomClient(object):
     async def __api_request_async(self, actions, priority=False):
         """ Build request to the internal JSON-req API """
 
-        ## Auto login
-        if self._server_nonce == "" and actions[0]['method'] != "logIn" :
+        # Auto login
+        if self._server_nonce == "" and actions[0]['method'] != "logIn":
             await self.login()
 
         self.__generate_request_id()
