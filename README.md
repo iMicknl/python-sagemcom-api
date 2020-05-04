@@ -19,7 +19,7 @@ The Sagemcom F@st series is in use by multiple cable companies, where some cable
 | Sagemcom F@st 3890V3 | Delta / Zeelandnet   | md5                   |
 | Sagemcom F@st 5250   | Bell (Home Hub 2000) | md5                   |
 | Sagemcom F@st 5280   |                      | sha512                |
-| Sagemcom F@st 5364   | BT ( Smart Hub)      | md5                   |
+| Sagemcom F@st 5364   | BT (Smart Hub)       | md5                   |
 | Sagemcom F@st 5370e  | Telia                | sha512                |
 | Sagemcom F@st 5566   | Bell (Home Hub 3000) | md5                   |
 | Sagemcom F@st 5655V2 | MásMóvil             | md5                   |
