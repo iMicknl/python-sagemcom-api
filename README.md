@@ -28,15 +28,16 @@ The Sagemcom F@st series is in use by multiple cable companies, where some cable
 
 ## Installation
 
-_This package has not been published on PyPi yet since it is a work in progress, clone this repository to get started._
+_This package has not been published on PyPi yet since it is a work in progress._
 
 ```bash
-pip install sagemcom-api
+pip install sagemcom_api@git+https://github.com/iMicknl/python-sagemcom-api
+# pip install sagemcom-api
 ```
 
 ## Usage
 
-Depending on the router model, Sagemcom is using different encryption methods for authentication, which can be found in [the table above](#supported-devices). This package supports MD5 and SHA512 encryption.
+Depending on the router model, Sagemcom is using different encryption methods for authentication, which can be found in [the table above](#supported-devices). This package supports MD5 and SHA512 encryption. You don't need to login before every function call, the package will login automatically if necessary.
 
 ```python
 import asyncio
@@ -46,11 +47,16 @@ async def main():
     # Choose EncryptionMethod.MD5 or EncryptionMethod.SHA512
     sagemcom = SagemcomClient('local ip address', 'username', 'password', EncryptionMethod.MD5)
 
+    ## Login method could be used to test the credentials
     logged_in = await sagemcom.login()
 
     if logged_in:
         device_info = await sagemcom.get_device_info()
         print(device_info)
+
+    ## Or just call get_device_info() directly
+    device_info = await sagemcom.get_device_info()
+    print(device_info)
 
 asyncio.run(main())
 ```

@@ -12,12 +12,13 @@ import json
 from collections import namedtuple
 from enum import Enum
 
-
 class EncryptionMethod(Enum):
+    def __str__(self):
+        return str(self.value)
+
     MD5 = 'md5'
     SHA512 = 'sha512'
     UNKNOWN = 'unknown'
-
 
 class UnauthorizedException(Exception):
     pass
@@ -52,7 +53,6 @@ class SagemcomClient(object):
         self.host = host
         self.username = username
         self.authentication_method = authentication_method
-
         self._password_hash = self.__generate_hash(password)
 
         self._current_nonce = None
@@ -72,10 +72,11 @@ class SagemcomClient(object):
         """ Hash value with MD5 or SHA12 and return HEX """
         bytes_object = bytes(value, encoding='utf-8')
 
-        if self.authentication_method is EncryptionMethod.MD5:
+        #TODO Solve ugly string workaround for enums
+        if str(self.authentication_method) is str(EncryptionMethod.MD5):
             return hashlib.md5(bytes_object).hexdigest()
 
-        if self.authentication_method is EncryptionMethod.SHA512:
+        if str(self.authentication_method) is str(EncryptionMethod.SHA512):
             return hashlib.sha512(bytes_object).hexdigest()
 
         return value
@@ -101,10 +102,19 @@ class SagemcomClient(object):
 
         return value
 
+    def __get_response(self, response, index=0):
+        """ TODO """
+        try:
+            value = response['reply']['actions'][index]['callbacks'][index]['parameters']
+        except KeyError:
+            value = None
+
+        return value
+
     def __get_response_value(self, response, index=0):
         """ TODO """
         try:
-            value = response['reply']['actions'][index]["callbacks"][index]["parameters"]
+            value = self.__get_response(response, index)["value"]
         except KeyError:
             value = None
 
@@ -192,7 +202,9 @@ class SagemcomClient(object):
         }
 
         response = await self.__api_request_async([actions], True)
-        data = self.__get_response_value(response)
+        data = self.__get_response(response)
+
+        print (data)
 
         if data['id'] is not None and data['nonce'] is not None:
             self._session_id = data['id']

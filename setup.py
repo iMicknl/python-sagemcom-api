@@ -4,7 +4,7 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setup(
-    name="sagemcom-api",
+    name="sagemcom_api",
     version="0.1.0",
     author="Mick Vleeshouwer",
     author_email="mick@imick.nl",
@@ -19,5 +19,5 @@ setup(
         "Operating System :: OS Independent",
     ),
     packages=find_packages(),
-    install_requires=['aiohttp>=3.6.2'],
+    install_requires=['aiohttp==3.6.1'],
 )
