@@ -32,7 +32,6 @@ _This package has not been published on PyPi yet since it is a work in progress.
 
 ```bash
 pip install sagemcom_api@git+https://github.com/iMicknl/python-sagemcom-api
-# pip install sagemcom-api
 ```
 
 ## Usage
@@ -44,19 +43,14 @@ import asyncio
 from sagemcom_api import SagemcomClient, EncryptionMethod
 
 async def main():
-    # Choose EncryptionMethod.MD5 or EncryptionMethod.SHA512
+    # Choose EncryptionMethod.MD5, EncryptionMethod.SHA512 or EncryptionMethod.Unknown
     sagemcom = SagemcomClient('local ip address', 'username', 'password', EncryptionMethod.MD5)
 
-    ## Login method could be used to test the credentials
-    logged_in = await sagemcom.login()
-
-    if logged_in:
+    try:
         device_info = await sagemcom.get_device_info()
         print(device_info)
-
-    ## Or just call get_device_info() directly
-    device_info = await sagemcom.get_device_info()
-    print(device_info)
+    except:
+        print('error')
 
 asyncio.run(main())
 ```
@@ -69,6 +63,22 @@ asyncio.run(main())
 - Add function to pass custom action
 - Add helper function to parse output
 - Document all functions
+
+## Functions
+
+- ```login()```
+- ```get_device_info(raw=False)```
+- ```get_port_mappings()```
+- ```get_hosts()```
+- ```reboot()```
+
+## Advanced
+
+### Determine EncryptionMethod
+
+### Exceptions
+
+### Get raw response
 
 ## Inspired by
 
