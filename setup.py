@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setup(
     name="sagemcom_api",
-    version="0.1.0",
+    version="0.2.0",
     author="Mick Vleeshouwer",
     author_email="mick@imick.nl",
     description="Python wrapper to interact with SagemCom F@st routers via internal API's.",

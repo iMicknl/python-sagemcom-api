@@ -12,6 +12,7 @@ import json
 from collections import namedtuple
 from enum import Enum
 
+
 class EncryptionMethod(Enum):
     def __str__(self):
         return str(self.value)
@@ -20,7 +21,12 @@ class EncryptionMethod(Enum):
     SHA512 = 'sha512'
     UNKNOWN = 'unknown'
 
+
 class UnauthorizedException(Exception):
+    pass
+
+
+class WrongEncryptionMethodException(Exception):
     pass
 
 
@@ -32,9 +38,35 @@ class UnknownException(Exception):
     pass
 
 
+DeviceInfo = namedtuple(
+    "DeviceInfo", [
+        "mac_address",
+        "serial_number",
+        "manufacturer",
+        "model_name",
+        "model_number",
+        "software_version",
+        "hardware_version",
+        "uptime",
+        "reboot_count",
+        "router_name",
+        "bootloader_version"
+    ])
+
 Device = namedtuple(
-    "Device", ["mac_address", "ip_address", "ipv4_addresses", "ipv6_addresses", "name", "address_source", "interface", "active",
-               "user_friendly_name", "detected_device_type", "user_device_type"])
+    "Device", [
+        "mac_address",
+        "ip_address",
+        "ipv4_addresses",
+        "ipv6_addresses",
+        "name",
+        "address_source",
+        "interface",
+        "active",
+        "user_friendly_name",
+        "detected_device_type",
+        "user_device_type"
+    ])
 
 
 class SagemcomClient(object):
@@ -52,7 +84,7 @@ class SagemcomClient(object):
 
         self.host = host
         self.username = username
-        self.authentication_method = authentication_method
+        self.authentication_method = str(authentication_method)
         self._password_hash = self.__generate_hash(password)
 
         self._current_nonce = None
@@ -72,11 +104,11 @@ class SagemcomClient(object):
         """ Hash value with MD5 or SHA12 and return HEX """
         bytes_object = bytes(value, encoding='utf-8')
 
-        #TODO Solve ugly string workaround for enums
-        if str(self.authentication_method) is str(EncryptionMethod.MD5):
+        # TODO Solve ugly string workaround for enums
+        if self.authentication_method == str(EncryptionMethod.MD5):
             return hashlib.md5(bytes_object).hexdigest()
 
-        if str(self.authentication_method) is str(EncryptionMethod.SHA512):
+        if self.authentication_method == str(EncryptionMethod.SHA512):
             return hashlib.sha512(bytes_object).hexdigest()
 
         return value
@@ -144,7 +176,8 @@ class SagemcomClient(object):
             }
         }
 
-        timeout = aiohttp.ClientTimeout(total=30)
+        timeout = aiohttp.ClientTimeout(total=7)
+
         async with aiohttp.ClientSession(timeout=timeout) as session:
             async with session.post(api_host, data="req=" + json.dumps(payload, separators=(',', ':'))) as response:
 
@@ -162,10 +195,9 @@ class SagemcomClient(object):
                     error = self.__get_response_error(result)
 
                     if (error['description'] != 'XMO_REQUEST_NO_ERR'):
-                        print(error)
 
-                        # handle XMO_INVALID_SESSION_ERR
-                        # handle XMO_REQUEST_ACTION_ERR
+                        if (error['description'] == 'XMO_REQUEST_ACTION_ERR'):
+                            raise UnauthorizedException
 
                 return result
 
@@ -201,10 +233,19 @@ class SagemcomClient(object):
             }
         }
 
-        response = await self.__api_request_async([actions], True)
-        data = self.__get_response(response)
+        try:
+            response = await self.__api_request_async([actions], True)
+            data = self.__get_response(response)
 
-        print (data)
+            pass
+
+        except UnauthorizedException as exception:
+            return False
+            pass
+
+        except asyncio.TimeoutError as exception:
+            return False
+            pass
 
         if data['id'] is not None and data['nonce'] is not None:
             self._session_id = data['id']
@@ -213,7 +254,7 @@ class SagemcomClient(object):
         else:
             return False
 
-    async def get_device_info(self):
+    async def get_device_info(self, raw=False):
         actions = {
             "id": 0,
             "method": "getValue",
@@ -223,9 +264,28 @@ class SagemcomClient(object):
         response = await self.__api_request_async([actions], False)
         data = self.__get_response_value(response)
 
-        return data
+        if raw:
+            return data
 
-    async def get_port_mappings(self):
+        info = data["DeviceInfo"]
+
+        device_info = DeviceInfo(
+            mac_address=info["MACAddress"],
+            serial_number=info["SerialNumber"],
+            manufacturer=info["Manufacturer"],
+            model_name=info["ModelName"],
+            model_number=info["ModelNumber"],
+            software_version=info["SoftwareVersion"],
+            hardware_version=info["HardwareVersion"],
+            uptime=info["UpTime"],
+            reboot_count=info["RebootCount"],
+            router_name=info["RouterName"],
+            bootloader_version=info["BootloaderVersion"]
+        )
+
+        return device_info
+
+    async def get_port_mappings(self, raw=False):
         actions = {
             "id": 0,
             "method": "getValue",
@@ -235,9 +295,12 @@ class SagemcomClient(object):
         response = await self.__api_request_async([actions], False)
         data = self.__get_response_value(response)
 
+        if raw:
+            return data
+
         return data
 
-    async def get_hosts(self):
+    async def get_hosts(self, raw=False):
         actions = {
             "id": 0,
             "method": "getValue",
