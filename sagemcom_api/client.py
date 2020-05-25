@@ -254,7 +254,10 @@ class SagemcomClient(object):
         response = await self.__api_request_async([actions], False)
         data = self.__get_response_value(response)
 
-        return data
+        if raw:
+            return data
+
+        return self.parse_devices(data)
 
     async def reboot(self):
         actions = {
@@ -287,8 +290,8 @@ class SagemcomClient(object):
                     interface=device['InterfaceType'],
                     active=device['Active'],
                     user_friendly_name=device['UserFriendlyName'],
-                    detected_device_type=device['DetectedDeviceType'],
-                    user_device_type=device['UserDeviceType']
+                    detected_device_type=device['DetectedDeviceType'].lower(),
+                    user_device_type=device['UserDeviceType'].lower()
                 )
 
                 devices.append(device)
