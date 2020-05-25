@@ -1,15 +1,15 @@
 ---
-name: Unsupported F@st model
-about: "Is your F@st model not supported by this package? Let's have a look if we can make the required changes."
+name: Bug report
+about: "Create a bug report for a bug you found in the Python Sagemcom API"
 ---
 
-## Model information
+## Versions
 
-| Key                      | Value |
-| ------------------------ | ----- |
-| Model name               |       |
-| Hardware Version         |       |
-| Software Version         |       |
+| Key               | Value |
+| ----------------- | ----- |
+| Package version   |       |
+| Python Version    |       |
+| F@st Router Model |       |
 
 ## Describe the bug
 
