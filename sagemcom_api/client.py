@@ -9,70 +9,13 @@ import math
 import random
 import json
 
-from collections import namedtuple
-from enum import Enum
-
-
-class EncryptionMethod(Enum):
-    def __str__(self):
-        return str(self.value)
-
-    MD5 = 'md5'
-    SHA512 = 'sha512'
-    UNKNOWN = 'unknown'
-
-
-class UnauthorizedException(Exception):
-    pass
-
-
-class WrongEncryptionMethodException(Exception):
-    pass
-
-
-class BadRequestException(Exception):
-    pass
-
-
-class UnknownException(Exception):
-    pass
-
-
-DeviceInfo = namedtuple(
-    "DeviceInfo", [
-        "mac_address",
-        "serial_number",
-        "manufacturer",
-        "model_name",
-        "model_number",
-        "software_version",
-        "hardware_version",
-        "uptime",
-        "reboot_count",
-        "router_name",
-        "bootloader_version"
-    ])
-
-Device = namedtuple(
-    "Device", [
-        "mac_address",
-        "ip_address",
-        "ipv4_addresses",
-        "ipv6_addresses",
-        "name",
-        "address_source",
-        "interface",
-        "active",
-        "user_friendly_name",
-        "detected_device_type",
-        "user_device_type"
-    ])
-
+from .models import *
+from .exceptions import *
 
 class SagemcomClient(object):
     """ Interface class for the Sagemcom API """
 
-    def __init__(self, host, username, password, authentication_method=EncryptionMethod.MD5):
+    def __init__(self, host, username, password, authentication_method=EncryptionMethod.UNKNOWN):
         """
         Constructor
 
@@ -178,28 +121,35 @@ class SagemcomClient(object):
 
         timeout = aiohttp.ClientTimeout(total=7)
 
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(api_host, data="req=" + json.dumps(payload, separators=(',', ':'))) as response:
+        try:
+            async with aiohttp.ClientSession(timeout=timeout) as session:
+                async with session.post(api_host, data="req=" + json.dumps(payload, separators=(',', ':'))) as response:
 
-                # Throw Bad Request expection
-                if (response.status is 400):
-                    result = await response.text()
-                    print(result)
+                    if (response.status is 400):
+                        result = await response.text()
+                        raise BadRequestException
 
-                if (response.status is not 200):
-                    result = await response.text()
-                    print(result)
+                    if (response.status is not 200):
+                        result = await response.text()
+                        raise UnknownException
 
-                if (response.status is 200):
-                    result = await response.json()
-                    error = self.__get_response_error(result)
+                    if (response.status is 200):
+                        result = await response.json()
+                        error = self.__get_response_error(result)
 
-                    if (error['description'] != 'XMO_REQUEST_NO_ERR'):
+                        if (error['description'] != 'XMO_REQUEST_NO_ERR'):
+                            if (error['description'] == 'XMO_REQUEST_ACTION_ERR'):
+                                raise UnauthorizedException
 
-                        if (error['description'] == 'XMO_REQUEST_ACTION_ERR'):
-                            raise UnauthorizedException
+                            raise UnknownException
 
-                return result
+                        return result
+
+        except asyncio.TimeoutError as exception:
+            raise TimeoutException
+
+        except:
+            raise UnknownException
 
     async def login(self):
         actions = {
@@ -233,26 +183,15 @@ class SagemcomClient(object):
             }
         }
 
-        try:
-            response = await self.__api_request_async([actions], True)
-            data = self.__get_response(response)
-
-            pass
-
-        except UnauthorizedException as exception:
-            return False
-            pass
-
-        except asyncio.TimeoutError as exception:
-            return False
-            pass
+        response = await self.__api_request_async([actions], True)
+        data = self.__get_response(response)
 
         if data['id'] is not None and data['nonce'] is not None:
             self._session_id = data['id']
             self._server_nonce = data['nonce']
             return True
         else:
-            return False
+            raise UnauthorizedException
 
     async def get_device_info(self, raw=False):
         actions = {

@@ -1,10 +1,10 @@
 # python-sagemcom-api
 
-(Unofficial) Python wrapper to interact with SagemCom F@st routers via internal API's. This package is utilizing async/await, thus Python 3.7+ is required.
+(Unofficial) Python wrapper to interact with SagemCom F@st routers via internal API's. This package is utilizing async/await, thus Python 3.7+ is required. All responses are modelled using named tuples by default, however it is also possible to receive the raw request.
 
 ## Features
 
-- Get (connected) devices
+- Get (connected) devices (wifi and ethernet)
 - Get router information
 - Reboot router
 
@@ -57,20 +57,18 @@ asyncio.run(main())
 
 ## TODO
 
-- Auto login for the first request
 - Add proper exceptions + handling
 - Add helper function to determine if the model is using MD5 or SHA512 encryption for authentication
 - Add function to pass custom action
-- Add helper function to parse output
 - Document all functions
 
 ## Functions
 
-- ```login()```
-- ```get_device_info(raw=False)```
-- ```get_port_mappings()```
-- ```get_hosts()```
-- ```reboot()```
+- `login()`
+- `get_device_info(raw=False)`
+- `get_port_mappings()`
+- `get_hosts()`
+- `reboot()`
 
 ## Advanced
 
@@ -79,6 +77,8 @@ asyncio.run(main())
 ### Exceptions
 
 ### Get raw response
+
+### Pass your custom action
 
 ## Inspired by
 
