@@ -15,7 +15,7 @@ from .exceptions import *
 class SagemcomClient(object):
     """ Interface class for the Sagemcom API """
 
-    def __init__(self, host, username, password, authentication_method=EncryptionMethod.UNKNOWN):
+    def __init__(self, host, username, password, authentication_method=EncryptionMethod.UNKNOWN, request_timeout=7):
         """
         Constructor
 
@@ -34,6 +34,7 @@ class SagemcomClient(object):
         self._server_nonce = ''
         self._session_id = 0
         self._request_id = -1
+        self._request_timeout = int(request_timeout)
 
     def __generate_nonce(self):
         """ Generate pseudo random number (nonce) to avoid replay attacks """
@@ -119,7 +120,7 @@ class SagemcomClient(object):
             }
         }
 
-        timeout = aiohttp.ClientTimeout(total=7)
+        timeout = aiohttp.ClientTimeout(total=self._request_timeout)
 
         try:
             async with aiohttp.ClientSession(timeout=timeout) as session:
@@ -258,6 +259,23 @@ class SagemcomClient(object):
             return data
 
         return self.parse_devices(data)
+
+
+    async def get_ipv6_prefix_lan(self):
+        actions = {
+            "id": 0,
+            "method": "getValue",
+            "xpath": "Device/Managers/Network/IPAddressInformations/IPv6/PrefixLan",
+            "options": {
+                "capability-flags": {
+                      "interface": True,
+                }
+            }
+        }
+        response = await self.__api_request_async([actions], False)
+        data = self.__get_response_value(response)
+
+        return data
 
     async def reboot(self):
         actions = {
