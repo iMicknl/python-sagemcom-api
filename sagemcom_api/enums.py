@@ -4,7 +4,10 @@ from enum import Enum
 
 
 class EncryptionMethod(Enum):
+    """TODO."""
+
     def __str__(self):
+        """TODO."""
         return str(self.value)
 
     MD5 = "md5"

@@ -4,6 +4,11 @@ repos:
     hooks:
       - id: pyupgrade
         args: [--py37-plus]
+  - repo: https://github.com/PyCQA/isort
+    rev: 5.5.3
+    hooks:
+      - id: isort
+        args: ["--profile", "black"]
   - repo: https://github.com/psf/black
     rev: 20.8b1
     hooks:
@@ -25,14 +30,11 @@ repos:
     rev: 3.8.4
     hooks:
       - id: flake8
+        args: ['--ignore=E501']
         additional_dependencies:
           - flake8-docstrings==1.5.0
           - pydocstyle==5.1.1
         files: ^(sagemcom_api)/.+\.py$
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.5.3
-    hooks:
-      - id: isort
   - repo: https://github.com/adrienverge/yamllint.git
     rev: v1.24.2
     hooks:

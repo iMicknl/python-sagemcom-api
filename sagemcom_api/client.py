@@ -14,8 +14,12 @@ from aiohttp import ClientSession, ClientTimeout
 
 from .const import XMO_REQUEST_ACTION_ERR, XMO_REQUEST_NO_ERR
 from .enums import EncryptionMethod
-from .exceptions import (BadRequestException, TimeoutException,
-                         UnauthorizedException, UnknownException)
+from .exceptions import (
+    BadRequestException,
+    TimeoutException,
+    UnauthorizedException,
+    UnknownException,
+)
 from .models import Device, DeviceInfo
 
 
@@ -32,13 +36,13 @@ class SagemcomClient:
         timeout: int = 7,
     ):
         """
-        Constructor.
+        Create a SagemCom client.
+
         :param host: the host of your Sagemcom router
         :param username: the username for your Sagemcom router
         :param password: the password for your Sagemcom router
-        :param authentication_method: the authentication method of your Sagemcom router
+        :param authentication_method: the auth method of your Sagemcom router
         """
-
         self.host = host
         self.username = username
         self.authentication_method = authentication_method
@@ -52,6 +56,7 @@ class SagemcomClient:
         self.timeout = timeout
 
     async def __aenter__(self) -> SagemcomClient:
+        """TODO."""
         return self
 
     async def __aexit__(
@@ -60,6 +65,7 @@ class SagemcomClient:
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> None:
+        """TODO."""
         await self.close()
 
     async def close(self) -> None:
@@ -67,15 +73,15 @@ class SagemcomClient:
         await self.session.close()
 
     def __generate_nonce(self):
-        """ Generate pseudo random number (nonce) to avoid replay attacks """
+        """Generate pseudo random number (nonce) to avoid replay attacks."""
         self._current_nonce = math.floor(random.randrange(0, 1) * 500000)
 
     def __generate_request_id(self):
-        """ Generate sequential request ID """
+        """Generate sequential request ID."""
         self._request_id += 1
 
     def __generate_hash(self, value):
-        """ Hash value with MD5 or SHA12 and return HEX """
+        """Hash value with MD5 or SHA12 and return HEX."""
         bytes_object = bytes(value, encoding="utf-8")
 
         if self.authentication_method == EncryptionMethod.MD5:
@@ -87,27 +93,19 @@ class SagemcomClient:
         return value
 
     def __get_credential_hash(self):
-        """ Build credential hash """
+        """Build credential hash."""
         return self.__generate_hash(
             self.username + ":" + self._server_nonce + ":" + self._password_hash
         )
 
     def __generate_auth_key(self):
-        """ Build auth key """
+        """Build auth key."""  # noqa: E501
         credential_hash = self.__get_credential_hash()
-        auth_string = (
-            str(credential_hash)
-            + ":"
-            + str(self._request_id)
-            + ":"
-            + str(self._current_nonce)
-            + ":JSON:/cgi/json-req"
-        )
-
+        auth_string = f"{credential_hash}:{self._request_id}:{self._current_nonce}:JSON:/cgi/json-req"
         self._auth_key = self.__generate_hash(auth_string)
 
     def __get_response_error(self, response):
-        """ TODO """
+        """TODO."""
         try:
             value = response["reply"]["error"]
         except KeyError:
@@ -116,7 +114,7 @@ class SagemcomClient:
         return value
 
     def __get_response(self, response, index=0):
-        """ TODO """
+        """TODO."""
         try:
             value = response["reply"]["actions"][index]["callbacks"][index][
                 "parameters"
@@ -127,7 +125,7 @@ class SagemcomClient:
         return value
 
     def __get_response_value(self, response, index=0):
-        """ TODO """
+        """TODO."""
         try:
             value = self.__get_response(response, index)["value"]
         except KeyError:
@@ -136,8 +134,7 @@ class SagemcomClient:
         return value
 
     async def __api_request_async(self, actions, priority=False):
-        """ Build request to the internal JSON-req API """
-
+        """Build request to the internal JSON-req API."""
         # Auto login
         if self._server_nonce == "" and actions[0]["method"] != "logIn":
             await self.login()
@@ -191,6 +188,7 @@ class SagemcomClient:
             raise TimeoutException from exception
 
     async def login(self):
+        """TODO."""
         actions = {
             "method": "logIn",
             "parameters": {
@@ -225,11 +223,12 @@ class SagemcomClient:
             raise UnauthorizedException
 
     async def get_device_info(self, raw=False):
+        """TODO."""
         actions = {"id": 0, "method": "getValue", "xpath": "Device/DeviceInfo"}
 
         response = await self.__api_request_async([actions], False)
         data = self.__get_response_value(response)
-        data = humps.decamelize(data)  # TODO move up the chain
+        data = humps.decamelize(data)  # TODO. move up the chain
 
         if raw:
             return data
@@ -237,6 +236,7 @@ class SagemcomClient:
         return DeviceInfo(**data.get("device_info"))
 
     async def get_port_mappings(self, raw=False):
+        """TODO."""
         actions = {"id": 0, "method": "getValue", "xpath": "Device/NAT/PortMappings"}
 
         response = await self.__api_request_async([actions], False)
@@ -248,6 +248,7 @@ class SagemcomClient:
         return data
 
     async def get_hosts(self, raw=False):
+        """TODO."""
         actions = {
             "id": 0,
             "method": "getValue",
@@ -271,6 +272,7 @@ class SagemcomClient:
         return devices
 
     async def reboot(self):
+        """TODO."""
         actions = {
             "method": "reboot",
             "xpath": "Device",
@@ -283,6 +285,7 @@ class SagemcomClient:
         return data
 
     async def get_ipv6_prefix_lan(self):
+        """TODO."""
         actions = {
             "id": 0,
             "method": "getValue",
