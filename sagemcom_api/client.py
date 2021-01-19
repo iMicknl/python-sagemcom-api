@@ -1,20 +1,23 @@
 """ Python wrapper for the Sagemcom API """
 from __future__ import annotations
-from types import TracebackType
-from typing import Optional, Type
-from aiohttp import ClientSession, ClientTimeout
 
 import asyncio
 import hashlib
+import json
 import math
 import random
-import json
+from types import TracebackType
+from typing import Optional, Type
+
 import humps
+from aiohttp import ClientSession, ClientTimeout
 
 from .const import XMO_NO_ERR, XMO_REQUEST_ACTION_ERR, XMO_REQUEST_NO_ERR
 from .enums import EncryptionMethod
+from .exceptions import (BadRequestException, TimeoutException,
+                         UnauthorizedException, UnknownException)
 from .models import Device, DeviceInfo
-from .exceptions import UnauthorizedException, TimeoutException, BadRequestException, UnknownException
+
 
 class SagemcomClient:
     """ Interface class for the Sagemcom API """

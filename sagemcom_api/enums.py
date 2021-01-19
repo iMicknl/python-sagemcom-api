@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class EncryptionMethod(Enum):
     def __str__(self):
         return str(self.value)

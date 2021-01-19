@@ -1,6 +1,7 @@
-from typing import Any, List, Optional
-from dataclasses import dataclass
 import dataclasses
+from dataclasses import dataclass
+from typing import Any, List, Optional
+
 
 @dataclass
 class Device:
@@ -45,7 +46,7 @@ class Device:
 
     # TODO Remove extra kwargs before init
     def __init__(self, **kwargs):
-        names = set([f.name for f in dataclasses.fields(self)])
+        names = {f.name for f in dataclasses.fields(self)}
         for k, v in kwargs.items():
             if k in names:
                 setattr(self, k, v)
@@ -107,7 +108,7 @@ class DeviceInfo:
 
     # TODO Remove extra kwargs before init
     def __init__(self, **kwargs):
-        names = set([f.name for f in dataclasses.fields(self)])
+        names = {f.name for f in dataclasses.fields(self)}
         for k, v in kwargs.items():
             if k in names:
                 setattr(self, k, v)
