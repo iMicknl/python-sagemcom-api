@@ -1,3 +1,6 @@
+"""Exceptions for the Sagemcom F@st client."""
+
+
 class UnauthorizedException(Exception):
     pass
 

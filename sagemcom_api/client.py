@@ -1,4 +1,4 @@
-""" Python wrapper for the Sagemcom API """
+"""Client to communicate with Sagemcom F@st internal APIs."""
 from __future__ import annotations
 
 import asyncio
@@ -12,7 +12,7 @@ from typing import Optional, Type
 import humps
 from aiohttp import ClientSession, ClientTimeout
 
-from .const import XMO_NO_ERR, XMO_REQUEST_ACTION_ERR, XMO_REQUEST_NO_ERR
+from .const import XMO_REQUEST_ACTION_ERR, XMO_REQUEST_NO_ERR
 from .enums import EncryptionMethod
 from .exceptions import (BadRequestException, TimeoutException,
                          UnauthorizedException, UnknownException)
@@ -20,7 +20,7 @@ from .models import Device, DeviceInfo
 
 
 class SagemcomClient:
-    """ Interface class for the Sagemcom API """
+    """Client to communicate with the Sagemcom API."""
 
     def __init__(
         self,
@@ -31,8 +31,7 @@ class SagemcomClient:
         session: ClientSession = None,
     ):
         """
-        Constructor
-
+        Constructor.
         :param host: the host of your Sagemcom router
         :param username: the username for your Sagemcom router
         :param password: the password for your Sagemcom router
@@ -188,9 +187,6 @@ class SagemcomClient:
 
         except asyncio.TimeoutError as exception:
             raise TimeoutException from exception
-
-        except:
-            raise UnknownException
 
     async def login(self):
         actions = {

@@ -1,3 +1,5 @@
+"""Models for the Sagemcom F@st client."""
+
 import dataclasses
 from dataclasses import dataclass
 from typing import Any, List, Optional
@@ -5,7 +7,7 @@ from typing import Any, List, Optional
 
 @dataclass
 class Device:
-    """ Device connected to a router """
+    """Device connected to a router."""
 
     uid: Optional[int] = None
     alias: Optional[str] = None
@@ -47,6 +49,7 @@ class Device:
 
     # TODO Remove extra kwargs before init
     def __init__(self, **kwargs):
+        """Override to accept more args than specified."""
         names = {f.name for f in dataclasses.fields(self)}
         for k, v in kwargs.items():
             if k in names:
@@ -65,7 +68,7 @@ class Device:
 
 @dataclass
 class DeviceInfo:
-    """ Sagemcom Router """
+    """Sagemcom Router representation."""
 
     mac_address: str
     serial_number: Optional[str] = None
@@ -111,6 +114,7 @@ class DeviceInfo:
 
     # TODO Remove extra kwargs before init
     def __init__(self, **kwargs):
+        """Override to accept more args than specified."""
         names = {f.name for f in dataclasses.fields(self)}
         for k, v in kwargs.items():
             if k in names:
