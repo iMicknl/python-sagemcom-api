@@ -1,21 +1,25 @@
 """ Python wrapper for the Sagemcom API """
-import aiohttp
+from __future__ import annotations
+from types import TracebackType
+from typing import Optional, Type
+from aiohttp import ClientSession, ClientTimeout
 
 import asyncio
-import logging
-import time
 import hashlib
 import math
 import random
 import json
+import humps
 
-from .models import *
-from .exceptions import *
+from .const import XMO_NO_ERR, XMO_REQUEST_ACTION_ERR, XMO_REQUEST_NO_ERR
+from .enums import EncryptionMethod
+from .models import Device, DeviceInfo
+from .exceptions import UnauthorizedException, TimeoutException, BadRequestException, UnknownException
 
-class SagemcomClient(object):
+class SagemcomClient:
     """ Interface class for the Sagemcom API """
 
-    def __init__(self, host, username, password, authentication_method=EncryptionMethod.UNKNOWN, request_timeout=7):
+    def __init__(self, host, username, password, authentication_method=EncryptionMethod.UNKNOWN, session: ClientSession = None):
         """
         Constructor
 
@@ -27,14 +31,29 @@ class SagemcomClient(object):
 
         self.host = host
         self.username = username
-        self.authentication_method = str(authentication_method)
+        self.authentication_method = authentication_method
         self._password_hash = self.__generate_hash(password)
 
         self._current_nonce = None
         self._server_nonce = ''
         self._session_id = 0
         self._request_id = -1
-        self._request_timeout = int(request_timeout)
+        self.session = session if session else ClientSession()
+
+    async def __aenter__(self) -> SagemcomClient:
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        await self.close()
+
+    async def close(self) -> None:
+        """Close the session."""
+        await self.session.close()
 
     def __generate_nonce(self):
         """ Generate pseudo random number (nonce) to avoid replay attacks """
@@ -48,11 +67,10 @@ class SagemcomClient(object):
         """ Hash value with MD5 or SHA12 and return HEX """
         bytes_object = bytes(value, encoding='utf-8')
 
-        # TODO Solve ugly string workaround for enums
-        if self.authentication_method == str(EncryptionMethod.MD5):
+        if self.authentication_method == EncryptionMethod.MD5:
             return hashlib.md5(bytes_object).hexdigest()
 
-        if self.authentication_method == str(EncryptionMethod.SHA512):
+        if self.authentication_method == EncryptionMethod.SHA512:
             return hashlib.sha512(bytes_object).hexdigest()
 
         return value
@@ -120,34 +138,34 @@ class SagemcomClient(object):
             }
         }
 
-        timeout = aiohttp.ClientTimeout(total=self._request_timeout)
+        timeout = ClientTimeout(total=7)
 
         try:
-            async with aiohttp.ClientSession(timeout=timeout) as session:
+            async with ClientSession(timeout=timeout) as session:
                 async with session.post(api_host, data="req=" + json.dumps(payload, separators=(',', ':'))) as response:
 
-                    if (response.status is 400):
+                    if (response.status == 400):
                         result = await response.text()
-                        raise BadRequestException
+                        raise BadRequestException(result)
 
-                    if (response.status is not 200):
+                    if (response.status != 200):
                         result = await response.text()
-                        raise UnknownException
+                        raise UnknownException(result)
 
-                    if (response.status is 200):
+                    if (response.status == 200):
                         result = await response.json()
                         error = self.__get_response_error(result)
 
-                        if (error['description'] != 'XMO_REQUEST_NO_ERR'):
-                            if (error['description'] == 'XMO_REQUEST_ACTION_ERR'):
-                                raise UnauthorizedException
+                        if (error['description'] != XMO_REQUEST_NO_ERR):
+                            if (error['description'] == XMO_REQUEST_ACTION_ERR):
+                                raise UnauthorizedException(error)
 
-                            raise UnknownException
+                            raise UnknownException(error)
 
                         return result
 
         except asyncio.TimeoutError as exception:
-            raise TimeoutException
+            raise TimeoutException from exception
 
         except:
             raise UnknownException
@@ -203,27 +221,12 @@ class SagemcomClient(object):
 
         response = await self.__api_request_async([actions], False)
         data = self.__get_response_value(response)
+        data = humps.decamelize(data) # TODO move up the chain
 
         if raw:
             return data
 
-        info = data["DeviceInfo"]
-
-        device_info = DeviceInfo(
-            mac_address=info["MACAddress"],
-            serial_number=info["SerialNumber"],
-            manufacturer=info["Manufacturer"],
-            model_name=info["ModelName"],
-            model_number=info["ModelNumber"],
-            software_version=info["SoftwareVersion"],
-            hardware_version=info["HardwareVersion"],
-            uptime=info["UpTime"],
-            reboot_count=info["RebootCount"],
-            router_name=info["RouterName"],
-            bootloader_version=info["BootloaderVersion"]
-        )
-
-        return device_info
+        return DeviceInfo(**data.get('device_info'))
 
     async def get_port_mappings(self, raw=False):
         actions = {
@@ -254,28 +257,14 @@ class SagemcomClient(object):
 
         response = await self.__api_request_async([actions], False)
         data = self.__get_response_value(response)
+        data = humps.decamelize(data)
 
         if raw:
             return data
 
-        return self.parse_devices(data)
+        devices = [Device(**d) for d in data]
 
-
-    async def get_ipv6_prefix_lan(self):
-        actions = {
-            "id": 0,
-            "method": "getValue",
-            "xpath": "Device/Managers/Network/IPAddressInformations/IPv6/PrefixLan",
-            "options": {
-                "capability-flags": {
-                      "interface": True,
-                }
-            }
-        }
-        response = await self.__api_request_async([actions], False)
-        data = self.__get_response_value(response)
-
-        return data
+        return devices
 
     async def reboot(self):
         actions = {
@@ -291,27 +280,27 @@ class SagemcomClient(object):
 
         return data
 
-    def parse_devices(self, data, only_active=True) -> list:
+    # def parse_devices(self, data, only_active=True) -> list:
 
-        devices = []
+    #     devices = []''
 
-        for device in data:
-            if not only_active or device['Active']:
+    #     for device in data:
+    #         if not only_active or device['Active']:
 
-                device = Device(
-                    mac_address=device['PhysAddress'].upper(),
-                    ip_address=device['IPAddress'],
-                    ipv4_addresses=device['IPv4Addresses'],
-                    ipv6_addresses=device['IPv6Addresses'],
-                    address_source=device['AddressSource'],
-                    name=device['UserHostName'] or device['HostName'],
-                    interface=device['InterfaceType'],
-                    active=device['Active'],
-                    user_friendly_name=device['UserFriendlyName'],
-                    detected_device_type=device['DetectedDeviceType'].lower(),
-                    user_device_type=device['UserDeviceType'].lower()
-                )
+    #             device = Device(
+    #                 mac_address=device['PhysAddress'].upper(),
+    #                 ip_address=device['IPAddress'],
+    #                 ipv4_addresses=device['IPv4Addresses'],
+    #                 ipv6_addresses=device['IPv6Addresses'],
+    #                 address_source=device['AddressSource'],
+    #                 name=device['UserHostName'] or device['HostName'],
+    #                 interface=device['InterfaceType'],
+    #                 active=device['Active'],
+    #                 user_friendly_name=device['UserFriendlyName'],
+    #                 detected_device_type=device['DetectedDeviceType'].lower(),
+    #                 user_device_type=device['UserDeviceType'].lower()
+    #             )
 
-                devices.append(device)
+    #             devices.append(device)
 
-        return devices
+    #     return devices
