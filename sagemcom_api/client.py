@@ -29,6 +29,7 @@ class SagemcomClient:
         password,
         authentication_method=EncryptionMethod.UNKNOWN,
         session: ClientSession = None,
+        timeout: int = 7,
     ):
         """
         Constructor.
@@ -48,6 +49,7 @@ class SagemcomClient:
         self._session_id = 0
         self._request_id = -1
         self.session = session if session else ClientSession()
+        self.timeout = timeout
 
     async def __aenter__(self) -> SagemcomClient:
         return self
@@ -157,7 +159,7 @@ class SagemcomClient:
             }
         }
 
-        timeout = ClientTimeout(total=7)
+        timeout = ClientTimeout(total=self.timeout)
 
         try:
             async with ClientSession(timeout=timeout) as session:
@@ -280,27 +282,18 @@ class SagemcomClient:
 
         return data
 
-    # def parse_devices(self, data, only_active=True) -> list:
+    async def get_ipv6_prefix_lan(self):
+        actions = {
+            "id": 0,
+            "method": "getValue",
+            "xpath": "Device/Managers/Network/IPAddressInformations/IPv6/PrefixLan",
+            "options": {
+                "capability-flags": {
+                    "interface": True,
+                }
+            },
+        }
+        response = await self.__api_request_async([actions], False)
+        data = self.__get_response_value(response)
 
-    #     devices = []''
-
-    #     for device in data:
-    #         if not only_active or device['Active']:
-
-    #             device = Device(
-    #                 mac_address=device['PhysAddress'].upper(),
-    #                 ip_address=device['IPAddress'],
-    #                 ipv4_addresses=device['IPv4Addresses'],
-    #                 ipv6_addresses=device['IPv6Addresses'],
-    #                 address_source=device['AddressSource'],
-    #                 name=device['UserHostName'] or device['HostName'],
-    #                 interface=device['InterfaceType'],
-    #                 active=device['Active'],
-    #                 user_friendly_name=device['UserFriendlyName'],
-    #                 detected_device_type=device['DetectedDeviceType'].lower(),
-    #                 user_device_type=device['UserDeviceType'].lower()
-    #             )
-
-    #             devices.append(device)
-
-    #     return devices
+        return data
