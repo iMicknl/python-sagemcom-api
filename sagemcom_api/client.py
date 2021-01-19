@@ -22,7 +22,14 @@ from .models import Device, DeviceInfo
 class SagemcomClient:
     """ Interface class for the Sagemcom API """
 
-    def __init__(self, host, username, password, authentication_method=EncryptionMethod.UNKNOWN, session: ClientSession = None):
+    def __init__(
+        self,
+        host,
+        username,
+        password,
+        authentication_method=EncryptionMethod.UNKNOWN,
+        session: ClientSession = None,
+    ):
         """
         Constructor
 
@@ -38,7 +45,7 @@ class SagemcomClient:
         self._password_hash = self.__generate_hash(password)
 
         self._current_nonce = None
-        self._server_nonce = ''
+        self._server_nonce = ""
         self._session_id = 0
         self._request_id = -1
         self.session = session if session else ClientSession()
@@ -68,7 +75,7 @@ class SagemcomClient:
 
     def __generate_hash(self, value):
         """ Hash value with MD5 or SHA12 and return HEX """
-        bytes_object = bytes(value, encoding='utf-8')
+        bytes_object = bytes(value, encoding="utf-8")
 
         if self.authentication_method == EncryptionMethod.MD5:
             return hashlib.md5(bytes_object).hexdigest()
@@ -80,20 +87,28 @@ class SagemcomClient:
 
     def __get_credential_hash(self):
         """ Build credential hash """
-        return self.__generate_hash(self.username + ":" + self._server_nonce + ":" + self._password_hash)
+        return self.__generate_hash(
+            self.username + ":" + self._server_nonce + ":" + self._password_hash
+        )
 
     def __generate_auth_key(self):
         """ Build auth key """
         credential_hash = self.__get_credential_hash()
-        auth_string = str(credential_hash) + ":" + str(self._request_id) + \
-            ":" + str(self._current_nonce) + ":JSON:/cgi/json-req"
+        auth_string = (
+            str(credential_hash)
+            + ":"
+            + str(self._request_id)
+            + ":"
+            + str(self._current_nonce)
+            + ":JSON:/cgi/json-req"
+        )
 
         self._auth_key = self.__generate_hash(auth_string)
 
     def __get_response_error(self, response):
         """ TODO """
         try:
-            value = response['reply']['error']
+            value = response["reply"]["error"]
         except KeyError:
             value = None
 
@@ -102,7 +117,9 @@ class SagemcomClient:
     def __get_response(self, response, index=0):
         """ TODO """
         try:
-            value = response['reply']['actions'][index]['callbacks'][index]['parameters']
+            value = response["reply"]["actions"][index]["callbacks"][index][
+                "parameters"
+            ]
         except KeyError:
             value = None
 
@@ -121,7 +138,7 @@ class SagemcomClient:
         """ Build request to the internal JSON-req API """
 
         # Auto login
-        if self._server_nonce == "" and actions[0]['method'] != "logIn":
+        if self._server_nonce == "" and actions[0]["method"] != "logIn":
             await self.login()
 
         self.__generate_request_id()
@@ -137,7 +154,7 @@ class SagemcomClient:
                 "priority": priority,
                 "actions": actions,
                 "cnonce": self._current_nonce,
-                "auth-key": self._auth_key
+                "auth-key": self._auth_key,
             }
         }
 
@@ -145,22 +162,24 @@ class SagemcomClient:
 
         try:
             async with ClientSession(timeout=timeout) as session:
-                async with session.post(api_host, data="req=" + json.dumps(payload, separators=(',', ':'))) as response:
+                async with session.post(
+                    api_host, data="req=" + json.dumps(payload, separators=(",", ":"))
+                ) as response:
 
-                    if (response.status == 400):
+                    if response.status == 400:
                         result = await response.text()
                         raise BadRequestException(result)
 
-                    if (response.status != 200):
+                    if response.status != 200:
                         result = await response.text()
                         raise UnknownException(result)
 
-                    if (response.status == 200):
+                    if response.status == 200:
                         result = await response.json()
                         error = self.__get_response_error(result)
 
-                        if (error['description'] != XMO_REQUEST_NO_ERR):
-                            if (error['description'] == XMO_REQUEST_ACTION_ERR):
+                        if error["description"] != XMO_REQUEST_NO_ERR:
+                            if error["description"] == XMO_REQUEST_ACTION_ERR:
                                 raise UnauthorizedException(error)
 
                             raise UnknownException(error)
@@ -180,63 +199,47 @@ class SagemcomClient:
                 "user": self.username,
                 "persistent": "true",
                 "session-options": {
-                    "nss": [
-                        {
-                            "name": "gtw",
-                            "uri": "http://sagemcom.com/gateway-data"
-                        }
-                    ],
+                    "nss": [{"name": "gtw", "uri": "http://sagemcom.com/gateway-data"}],
                     "language": "ident",
-                    "context-flags": {
-                        "get-content-name": True,
-                        "local-time": True
-                    },
+                    "context-flags": {"get-content-name": True, "local-time": True},
                     "capability-depth": 2,
                     "capability-flags": {
                         "name": True,
                         "default-value": False,
                         "restriction": True,
-                        "description": False
+                        "description": False,
                     },
                     "time-format": "ISO_8601",
                     "write-only-string": "_XMO_WRITE_ONLY_",
-                    "undefined-write-only-string": "_XMO_UNDEFINED_WRITE_ONLY_"
-                }
-            }
+                    "undefined-write-only-string": "_XMO_UNDEFINED_WRITE_ONLY_",
+                },
+            },
         }
 
         response = await self.__api_request_async([actions], True)
         data = self.__get_response(response)
 
-        if data['id'] is not None and data['nonce'] is not None:
-            self._session_id = data['id']
-            self._server_nonce = data['nonce']
+        if data["id"] is not None and data["nonce"] is not None:
+            self._session_id = data["id"]
+            self._server_nonce = data["nonce"]
             return True
         else:
             raise UnauthorizedException
 
     async def get_device_info(self, raw=False):
-        actions = {
-            "id": 0,
-            "method": "getValue",
-            "xpath": "Device/DeviceInfo"
-        }
+        actions = {"id": 0, "method": "getValue", "xpath": "Device/DeviceInfo"}
 
         response = await self.__api_request_async([actions], False)
         data = self.__get_response_value(response)
-        data = humps.decamelize(data) # TODO move up the chain
+        data = humps.decamelize(data)  # TODO move up the chain
 
         if raw:
             return data
 
-        return DeviceInfo(**data.get('device_info'))
+        return DeviceInfo(**data.get("device_info"))
 
     async def get_port_mappings(self, raw=False):
-        actions = {
-            "id": 0,
-            "method": "getValue",
-            "xpath": "Device/NAT/PortMappings"
-        }
+        actions = {"id": 0, "method": "getValue", "xpath": "Device/NAT/PortMappings"}
 
         response = await self.__api_request_async([actions], False)
         data = self.__get_response_value(response)
@@ -253,9 +256,9 @@ class SagemcomClient:
             "xpath": "Device/Hosts/Hosts",
             "options": {
                 "capability-flags": {
-                      "interface": True,
+                    "interface": True,
                 }
-            }
+            },
         }
 
         response = await self.__api_request_async([actions], False)
@@ -273,9 +276,7 @@ class SagemcomClient:
         actions = {
             "method": "reboot",
             "xpath": "Device",
-            "parameters": {
-                "source": "GUI"
-            }
+            "parameters": {"source": "GUI"},
         }
 
         response = await self.__api_request_async([actions], False)

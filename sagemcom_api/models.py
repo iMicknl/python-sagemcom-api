@@ -6,11 +6,12 @@ from typing import Any, List, Optional
 @dataclass
 class Device:
     """ Device connected to a router """
+
     uid: Optional[int] = None
     alias: Optional[str] = None
     phys_address: Optional[str] = None
     ip_address: Optional[str] = None
-    address_source: Optional[str] = None,
+    address_source: Optional[str] = None
     dhcp_client: Optional[str] = None
     lease_time_remaining: Optional[int] = None
     associated_device: Optional[Any] = None
@@ -20,15 +21,15 @@ class Device:
     client_id: Optional[Any] = None
     user_class_id: Optional[Any] = None
     host_name: Optional[Any] = None
-    active: Optional[bool] = None,
+    active: Optional[bool] = None
     lease_start: Optional[int] = None
     lease_duration: Optional[int] = None
-    interface_type: Optional[str] = None # enum!
+    interface_type: Optional[str] = None  # enum!
     detected_device_type: Optional[str] = None
     active_last_change: Optional[Any] = None
     user_friendly_name: Optional[str] = None
     user_host_name: Optional[str] = None
-    user_device_type: Optional[Any] = None # enum!
+    user_device_type: Optional[Any] = None  # enum!
     icon: Optional[Any] = None
     room: Optional[Any] = None
     blacklist_enable: Optional[bool] = None
@@ -61,9 +62,11 @@ class Device:
         """Return name of the device."""
         return self.user_host_name or self.host_name
 
+
 @dataclass
 class DeviceInfo:
     """ Sagemcom Router """
+
     mac_address: str
     serial_number: Optional[str] = None
     manufacturer: Optional[Any] = None
