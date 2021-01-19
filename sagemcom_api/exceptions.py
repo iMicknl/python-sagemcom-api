@@ -7,7 +7,7 @@ class UnauthorizedException(Exception):
     pass
 
 
-class TimeoutException(Exception):
+class LoginTimeoutException(Exception):
     """TODO."""
 
     pass

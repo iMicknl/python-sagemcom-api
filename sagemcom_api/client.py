@@ -7,7 +7,7 @@ import json
 import math
 import random
 from types import TracebackType
-from typing import Optional, Type
+from typing import Dict, Optional, Type
 
 import humps
 from aiohttp import ClientSession, ClientTimeout
@@ -16,11 +16,13 @@ from .const import XMO_REQUEST_ACTION_ERR, XMO_REQUEST_NO_ERR
 from .enums import EncryptionMethod
 from .exceptions import (
     BadRequestException,
-    TimeoutException,
+    LoginTimeoutException,
     UnauthorizedException,
     UnknownException,
 )
 from .models import Device, DeviceInfo
+
+DEFAULT_TIMEOUT = 7
 
 
 class SagemcomClient:
@@ -33,7 +35,6 @@ class SagemcomClient:
         password,
         authentication_method=EncryptionMethod.UNKNOWN,
         session: ClientSession = None,
-        timeout: int = 7,
     ):
         """
         Create a SagemCom client.
@@ -42,6 +43,7 @@ class SagemcomClient:
         :param username: the username for your Sagemcom router
         :param password: the password for your Sagemcom router
         :param authentication_method: the auth method of your Sagemcom router
+        :param session: use a custom session, for example to configure the timeout
         """
         self.host = host
         self.username = username
@@ -52,8 +54,11 @@ class SagemcomClient:
         self._server_nonce = ""
         self._session_id = 0
         self._request_id = -1
-        self.session = session if session else ClientSession()
-        self.timeout = timeout
+        self.session = (
+            session
+            if session
+            else ClientSession(timeout=ClientTimeout(DEFAULT_TIMEOUT))
+        )
 
     async def __aenter__(self) -> SagemcomClient:
         """TODO."""
@@ -65,7 +70,7 @@ class SagemcomClient:
         exc_value: Optional[BaseException],
         traceback: Optional[TracebackType],
     ) -> None:
-        """TODO."""
+        """Close session on exit."""
         await self.close()
 
     async def close(self) -> None:
@@ -99,7 +104,7 @@ class SagemcomClient:
         )
 
     def __generate_auth_key(self):
-        """Build auth key."""  # noqa: E501
+        """Build auth key."""
         credential_hash = self.__get_credential_hash()
         auth_string = f"{credential_hash}:{self._request_id}:{self._current_nonce}:JSON:/cgi/json-req"
         self._auth_key = self.__generate_hash(auth_string)
@@ -131,6 +136,9 @@ class SagemcomClient:
         except KeyError:
             value = None
 
+        # Rewrite result to snake_case
+        value = humps.decamelize(value)
+
         return value
 
     async def __api_request_async(self, actions, priority=False):
@@ -156,36 +164,31 @@ class SagemcomClient:
             }
         }
 
-        timeout = ClientTimeout(total=self.timeout)
+        # timeout = ClientTimeout(total=self.timeout)
 
-        try:
-            async with ClientSession(timeout=timeout) as session:
-                async with session.post(
-                    api_host, data="req=" + json.dumps(payload, separators=(",", ":"))
-                ) as response:
+        async with self.session.post(
+            api_host, data="req=" + json.dumps(payload, separators=(",", ":"))
+        ) as response:
 
-                    if response.status == 400:
-                        result = await response.text()
-                        raise BadRequestException(result)
+            if response.status == 400:
+                result = await response.text()
+                raise BadRequestException(result)
 
-                    if response.status != 200:
-                        result = await response.text()
-                        raise UnknownException(result)
+            if response.status != 200:
+                result = await response.text()
+                raise UnknownException(result)
 
-                    if response.status == 200:
-                        result = await response.json()
-                        error = self.__get_response_error(result)
+            if response.status == 200:
+                result = await response.json()
+                error = self.__get_response_error(result)
 
-                        if error["description"] != XMO_REQUEST_NO_ERR:
-                            if error["description"] == XMO_REQUEST_ACTION_ERR:
-                                raise UnauthorizedException(error)
+                if error["description"] != XMO_REQUEST_NO_ERR:
+                    if error["description"] == XMO_REQUEST_ACTION_ERR:
+                        raise UnauthorizedException(error)
 
-                            raise UnknownException(error)
+                    raise UnknownException(error)
 
-                        return result
-
-        except asyncio.TimeoutError as exception:
-            raise TimeoutException from exception
+                return result
 
     async def login(self):
         """TODO."""
@@ -212,7 +215,14 @@ class SagemcomClient:
             },
         }
 
-        response = await self.__api_request_async([actions], True)
+        try:
+            response = await self.__api_request_async([actions], True)
+        except asyncio.TimeoutError as exception:
+            # Add retry logic for other methods?
+            raise LoginTimeoutException(
+                "Couldn't connect to the, most of the time this is due to using the wrong hashing method."
+            ) from exception
+
         data = self.__get_response(response)
 
         if data["id"] is not None and data["nonce"] is not None:
@@ -228,7 +238,6 @@ class SagemcomClient:
 
         response = await self.__api_request_async([actions], False)
         data = self.__get_response_value(response)
-        data = humps.decamelize(data)  # TODO. move up the chain
 
         if raw:
             return data
@@ -249,20 +258,10 @@ class SagemcomClient:
 
     async def get_hosts(self, raw=False):
         """TODO."""
-        actions = {
-            "id": 0,
-            "method": "getValue",
-            "xpath": "Device/Hosts/Hosts",
-            "options": {
-                "capability-flags": {
-                    "interface": True,
-                }
-            },
-        }
+        actions = {"id": 0, "method": "getValue", "xpath": "Device/Hosts/Hosts"}
 
         response = await self.__api_request_async([actions], False)
         data = self.__get_response_value(response)
-        data = humps.decamelize(data)
 
         if raw:
             return data
@@ -272,7 +271,7 @@ class SagemcomClient:
         return devices
 
     async def reboot(self):
-        """TODO."""
+        """Reboot Sagemcom F@st device."""
         actions = {
             "method": "reboot",
             "xpath": "Device",
@@ -296,6 +295,20 @@ class SagemcomClient:
                 }
             },
         }
+        response = await self.__api_request_async([actions], False)
+        data = self.__get_response_value(response)
+
+        return data
+
+    async def get_value_by_xpath(self, xpath: str, options: Optional[Dict] = {}):
+        """
+        Retrieve value from router using XPATH.
+
+        :param xpath: path expression
+        :param options: optional options
+        """
+        actions = {"id": 0, "method": "getValue", "xpath": xpath, "options": options}
+
         response = await self.__api_request_async([actions], False)
         data = self.__get_response_value(response)
 

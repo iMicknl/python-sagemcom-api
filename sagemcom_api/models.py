@@ -58,7 +58,7 @@ class Device:
     @property
     def id(self):
         """Return unique ID for device."""
-        return self.phys_address
+        return self.phys_address.upper()
 
     @property
     def name(self):
