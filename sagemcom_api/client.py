@@ -9,16 +9,28 @@ import random
 from types import TracebackType
 from typing import Dict, List, Optional, Type
 
-import humps
 from aiohttp import ClientSession, ClientTimeout
+import humps
 
-from .const import XMO_REQUEST_ACTION_ERR, XMO_REQUEST_NO_ERR
+from .const import (
+    XMO_ACCESS_RESTRICTION_ERR,
+    XMO_AUTHENTICATION_ERR,
+    XMO_NO_ERR,
+    XMO_NON_WRITABLE_PARAMETER_ERR,
+    XMO_REQUEST_ACTION_ERR,
+    XMO_REQUEST_NO_ERR,
+    XMO_UNKNOWN_PATH_ERR,
+)
 from .enums import EncryptionMethod
 from .exceptions import (
+    AccessRestrictionException,
+    AuthenticationException,
     BadRequestException,
     LoginTimeoutException,
+    NonWritableParameterException,
     UnauthorizedException,
     UnknownException,
+    UnknownPathException,
 )
 from .models import Device, DeviceInfo, PortMapping
 
@@ -183,14 +195,38 @@ class SagemcomClient:
                 result = await response.json()
                 error = self.__get_response_error(result)
 
+                # No errors
                 if (
-                    error["description"] != XMO_REQUEST_NO_ERR
-                    and error["description"] != "Ok"  # noqa: W503 # F@ST 4360AIR
+                    error["description"] == XMO_REQUEST_NO_ERR
+                    or error["description"] == "Ok"  # NOQA: W503
                 ):
-                    if error["description"] == XMO_REQUEST_ACTION_ERR:
-                        raise BadRequestException(error)
+                    return result
 
-                    raise UnknownException(error)
+                # Error in one of the actions
+                if error["description"] == XMO_REQUEST_ACTION_ERR:
+
+                    # TODO How to support multiple actions + error handling?
+                    actions = result["reply"]["actions"]
+                    for action in actions:
+                        action_error = action["error"]
+                        action_error_description = action_error["description"]
+
+                        if action_error_description == XMO_NO_ERR:
+                            continue
+
+                        if action_error_description == XMO_AUTHENTICATION_ERR:
+                            raise AuthenticationException(action_error)
+
+                        if action_error_description == XMO_ACCESS_RESTRICTION_ERR:
+                            raise AccessRestrictionException(action_error)
+
+                        if action_error_description == XMO_NON_WRITABLE_PARAMETER_ERR:
+                            raise NonWritableParameterException(action_error)
+
+                        if action_error_description == XMO_UNKNOWN_PATH_ERR:
+                            raise UnknownPathException(action_error)
+
+                        raise UnknownException(action_error)
 
                 return result
 
@@ -250,6 +286,29 @@ class SagemcomClient:
         data = self.__get_response_value(response)
 
         return data
+
+    async def set_value_by_xpath(
+        self, xpath: str, value: str, options: Optional[Dict] = {}
+    ) -> Dict:
+        """
+        Retrieve raw value from router using XPath.
+
+        :param xpath: path expression
+        :param value: value
+        :param options: optional options
+        """
+        actions = {
+            "id": 0,
+            "method": "setValue",
+            "xpath": xpath,
+            "parameters": {"value": str(value)},
+            "options": options,
+        }
+
+        response = await self.__api_request_async([actions], False)
+        print(response)
+
+        return response
 
     async def get_device_info(self) -> DeviceInfo:
         """Retrieve information about Sagemcom F@st device."""
