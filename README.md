@@ -1,14 +1,15 @@
-# python-sagemcom-api
+# Sagemcom API Client in Python
 
-(Unofficial) Python client to interact with SagemCom F@st routers via internal API's. This client offers helper functions to retrieve common used functions, but also offers functionality to do custom requests via XPATH notation.
+(Unofficial) async Python client to interact with Sagemcom F@st routers via internal API's. This client offers helper functions to retrieve common used functions, but also offers functionality to do custom requests via XPATH notation.
 
 Python 3.7+ required.
 
 ## Features
 
-- Retrieve detailed information of Sagemcom F@st device
+- Retrieve detailed information of your Sagemcom F@st device
 - Retrieve connected devices (wifi and ethernet)
 - Reboot Sagemcom F@st device
+- Retrieve and set all values of your Sagemcom F@st device
 
 ## Supported devices
 
@@ -39,7 +40,9 @@ pip install sagemcom_api@git+https://github.com/iMicknl/python-sagemcom-api@v1.0
 
 ## Usage
 
-Depending on the router model, Sagemcom is using different encryption methods for authentication, which can be found in [the table above](#supported-devices). This package supports MD5 and SHA512 encryption. You don't need to login before every function call, the package will login automatically if necessary.
+Depending on the router model, Sagemcom is using different encryption methods for authentication, which can be found in [the table above](#supported-devices). This package supports MD5 and SHA512 encryption. If you receive a `LoginTimeoutException`, you will probably need to use another encryption type.
+
+The following script can be used as a quickstart.
 
 ```python
 import asyncio
@@ -70,8 +73,12 @@ async def main() -> None:
             if device.active:
                 print(f"{device.id} - {device.name}")
 
-        # Run custom command, output is a dict
-        custom_command_output = await client.get_value_by_xpath("Device/Managers/Network/IPAddressInformations/IPv6/PrefixLan")
+        # Retrieve values via XPath notation, output is a dict
+        custom_command_output = await client.get_value_by_xpath("Device/UserInterface/AdvancedMode")
+        print(custom_command_output)
+
+        # Set value via XPath notation
+        custom_command_output = await client.set_value_by_xpath("Device/UserInterface/AdvancedMode", "true")
         print(custom_command_output)
 
 asyncio.run(main())
@@ -90,10 +97,10 @@ asyncio.run(main())
 ## Advanced
 
 ### Determine the EncryptionMethod
-TODO
+(not supported yet)
 
 ### Handle exceptions
-Some functions may cause an error when an attempt is made to execute it. These exceptions are thrown by the client and need to be [handled in your Python program](https://docs.python.org/3/tutorial/errors.html#handling-exceptions). Best practice is to handle the exceptions and 
+Some functions may cause an error when an attempt is made to execute it. These exceptions are thrown by the client and need to be [handled in your Python program](https://docs.python.org/3/tutorial/errors.html#handling-exceptions). Best practice is to catch some specific exceptions and handle them gracefully.
 
 ```python
 from sagemcom_api.exceptions import *
@@ -103,7 +110,7 @@ try:
 except NonWritableParameterException as exception:
     print("You don't have rights to write to this parameter.")
 except UnknownPathException as exception:
-    print("The xptah does not exist.")
+    print("The xpath does not exist.")
 ```
 
 ### Run your custom commands
