@@ -183,7 +183,10 @@ class SagemcomClient:
                 result = await response.json()
                 error = self.__get_response_error(result)
 
-                if error["description"] != XMO_REQUEST_NO_ERR:
+                if (
+                    error["description"] != XMO_REQUEST_NO_ERR
+                    or error["description"] != "Ok"  # noqa: W503 # F@ST 4360AIR
+                ):
                     if error["description"] == XMO_REQUEST_ACTION_ERR:
                         raise UnauthorizedException(error)
 
