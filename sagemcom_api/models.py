@@ -124,3 +124,41 @@ class DeviceInfo:
     def id(self):
         """Return unique ID for gateway."""
         return self.mac_address
+
+
+@dataclass
+class PortMapping:
+    """Port Mapping representation."""
+
+    uid: int
+    enable: bool
+    status: Optional[str] = None  # Enum
+    alias: Optional[str] = None
+    external_interface: Optional[str] = None
+    all_external_interfaces: Optional[bool] = None
+    lease_duration: Optional[int] = None
+    external_port: Optional[int] = None
+    external_port_end_range: Optional[int] = None
+    internal_interface: Optional[str] = None
+    internal_port: Optional[int] = None
+    protocol: Optional[str] = None
+    service: Optional[str] = None
+    internal_client: Optional[str] = None
+    public_ip: Optional[str] = None
+    description: Optional[str] = None
+    creator: Optional[str] = None
+    target: Optional[str] = None
+    lease_start: Optional[str] = None  # Date?
+
+    # TODO Remove extra kwargs before init
+    def __init__(self, **kwargs):
+        """Override to accept more args than specified."""
+        names = {f.name for f in dataclasses.fields(self)}
+        for k, v in kwargs.items():
+            if k in names:
+                setattr(self, k, v)
+
+    @property
+    def id(self):
+        """Return unique ID for port mapping."""
+        return self.uid

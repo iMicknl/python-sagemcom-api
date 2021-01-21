@@ -7,7 +7,7 @@ import json
 import math
 import random
 from types import TracebackType
-from typing import Dict, Optional, Type
+from typing import Dict, List, Optional, Type
 
 import humps
 from aiohttp import ClientSession, ClientTimeout
@@ -20,9 +20,10 @@ from .exceptions import (
     UnauthorizedException,
     UnknownException,
 )
-from .models import Device, DeviceInfo
+from .models import Device, DeviceInfo, PortMapping
 
 DEFAULT_TIMEOUT = 7
+API_ENDPOINT = "/cgi/json-req"
 
 
 class SagemcomClient:
@@ -74,7 +75,7 @@ class SagemcomClient:
         await self.close()
 
     async def close(self) -> None:
-        """Close the session."""
+        """Close the websession."""
         await self.session.close()
 
     def __generate_nonce(self):
@@ -85,14 +86,16 @@ class SagemcomClient:
         """Generate sequential request ID."""
         self._request_id += 1
 
-    def __generate_hash(self, value):
-        """Hash value with MD5 or SHA12 and return HEX."""
+    def __generate_hash(self, value, authentication_method=None):
+        """Hash value with selected encryption method and return HEX value."""
+        auth_method = authentication_method or self.authentication_method
+
         bytes_object = bytes(value, encoding="utf-8")
 
-        if self.authentication_method == EncryptionMethod.MD5:
+        if auth_method == EncryptionMethod.MD5:
             return hashlib.md5(bytes_object).hexdigest()
 
-        if self.authentication_method == EncryptionMethod.SHA512:
+        if auth_method == EncryptionMethod.SHA512:
             return hashlib.sha512(bytes_object).hexdigest()
 
         return value
@@ -106,11 +109,11 @@ class SagemcomClient:
     def __generate_auth_key(self):
         """Build auth key."""
         credential_hash = self.__get_credential_hash()
-        auth_string = f"{credential_hash}:{self._request_id}:{self._current_nonce}:JSON:/cgi/json-req"
+        auth_string = f"{credential_hash}:{self._request_id}:{self._current_nonce}:JSON:{API_ENDPOINT}"
         self._auth_key = self.__generate_hash(auth_string)
 
     def __get_response_error(self, response):
-        """TODO."""
+        """Retrieve response error from result."""
         try:
             value = response["reply"]["error"]
         except KeyError:
@@ -119,7 +122,7 @@ class SagemcomClient:
         return value
 
     def __get_response(self, response, index=0):
-        """TODO."""
+        """Retrieve response from result."""
         try:
             value = response["reply"]["actions"][index]["callbacks"][index][
                 "parameters"
@@ -130,7 +133,7 @@ class SagemcomClient:
         return value
 
     def __get_response_value(self, response, index=0):
-        """TODO."""
+        """Retrieve response value from value."""
         try:
             value = self.__get_response(response, index)["value"]
         except KeyError:
@@ -151,7 +154,7 @@ class SagemcomClient:
         self.__generate_nonce()
         self.__generate_auth_key()
 
-        api_host = f"http://{self.host}/cgi/json-req"
+        api_host = f"http://{self.host}{API_ENDPOINT}"
 
         payload = {
             "request": {
@@ -163,8 +166,6 @@ class SagemcomClient:
                 "auth-key": self._auth_key,
             }
         }
-
-        # timeout = ClientTimeout(total=self.timeout)
 
         async with self.session.post(
             api_host, data="req=" + json.dumps(payload, separators=(",", ":"))
@@ -218,7 +219,7 @@ class SagemcomClient:
         try:
             response = await self.__api_request_async([actions], True)
         except asyncio.TimeoutError as exception:
-            # Add retry logic for other methods?
+            # Add retry logic for other hashing methods?
             raise LoginTimeoutException(
                 "Couldn't connect to the, most of the time this is due to using the wrong hashing method."
             ) from exception
@@ -230,79 +231,11 @@ class SagemcomClient:
             self._server_nonce = data["nonce"]
             return True
         else:
-            raise UnauthorizedException
-
-    async def get_device_info(self, raw=False):
-        """TODO."""
-        actions = {"id": 0, "method": "getValue", "xpath": "Device/DeviceInfo"}
-
-        response = await self.__api_request_async([actions], False)
-        data = self.__get_response_value(response)
-
-        if raw:
-            return data
-
-        return DeviceInfo(**data.get("device_info"))
-
-    async def get_port_mappings(self, raw=False):
-        """TODO."""
-        actions = {"id": 0, "method": "getValue", "xpath": "Device/NAT/PortMappings"}
-
-        response = await self.__api_request_async([actions], False)
-        data = self.__get_response_value(response)
-
-        if raw:
-            return data
-
-        return data
-
-    async def get_hosts(self, raw=False):
-        """TODO."""
-        actions = {"id": 0, "method": "getValue", "xpath": "Device/Hosts/Hosts"}
-
-        response = await self.__api_request_async([actions], False)
-        data = self.__get_response_value(response)
-
-        if raw:
-            return data
-
-        devices = [Device(**d) for d in data]
-
-        return devices
-
-    async def reboot(self):
-        """Reboot Sagemcom F@st device."""
-        actions = {
-            "method": "reboot",
-            "xpath": "Device",
-            "parameters": {"source": "GUI"},
-        }
-
-        response = await self.__api_request_async([actions], False)
-        data = self.__get_response_value(response)
-
-        return data
-
-    async def get_ipv6_prefix_lan(self):
-        """TODO."""
-        actions = {
-            "id": 0,
-            "method": "getValue",
-            "xpath": "Device/Managers/Network/IPAddressInformations/IPv6/PrefixLan",
-            "options": {
-                "capability-flags": {
-                    "interface": True,
-                }
-            },
-        }
-        response = await self.__api_request_async([actions], False)
-        data = self.__get_response_value(response)
-
-        return data
+            raise UnauthorizedException(data)
 
     async def get_value_by_xpath(self, xpath: str, options: Optional[Dict] = {}):
         """
-        Retrieve value from router using XPATH.
+        Retrieve raw value from router using XPATH.
 
         :param xpath: path expression
         :param options: optional options
@@ -310,6 +243,39 @@ class SagemcomClient:
         actions = {"id": 0, "method": "getValue", "xpath": xpath, "options": options}
 
         response = await self.__api_request_async([actions], False)
+        data = self.__get_response_value(response)
+
+        return data
+
+    async def get_device_info(self) -> DeviceInfo:
+        """Retrieve information about Sagemcom F@st device."""
+        data = await self.get_value_by_xpath("Device/DeviceInfo")
+
+        return DeviceInfo(**data.get("device_info"))
+
+    async def get_hosts(self, only_active: Optional[bool] = False) -> List[Device]:
+        """Retrieve hosts connected to Sagemcom F@st device."""
+        data = await self.get_value_by_xpath("Device/Hosts/Hosts")
+        devices = [Device(**d) for d in data]
+
+        return devices
+
+    async def get_port_mappings(self) -> List[PortMapping]:
+        """Retrieve configured Port Mappings on Sagemcom F@st device."""
+        data = await self.get_value_by_xpath("Device/NAT/PortMappings")
+        port_mappings = [PortMapping(**p) for p in data]
+
+        return port_mappings
+
+    async def reboot(self):
+        """Reboot Sagemcom F@st device."""
+        action = {
+            "method": "reboot",
+            "xpath": "Device",
+            "parameters": {"source": "GUI"},
+        }
+
+        response = await self.__api_request_async([action], False)
         data = self.__get_response_value(response)
 
         return data

@@ -41,17 +41,36 @@ Depending on the router model, Sagemcom is using different encryption methods fo
 
 ```python
 import asyncio
-from sagemcom_api import SagemcomClient, EncryptionMethod
+from sagemcom_api.enums import EncryptionMethod
+from sagemcom_api.client import SagemcomClient
 
-async def main():
-    # Choose EncryptionMethod.MD5, EncryptionMethod.SHA512 or EncryptionMethod.Unknown
-    sagemcom = SagemcomClient('local ip address', 'username', 'password', EncryptionMethod.MD5)
+HOST = ""
+USERNAME = ""
+PASSWORD = ""
+ENCRYPTION_METHOD = EncryptionMethod.MD5 # or EncryptionMethod.SHA512
 
-    try:
-        device_info = await sagemcom.get_device_info()
-        print(device_info)
-    except:
-        print('error')
+async def main() -> None:
+    async with SagemcomClient(HOST, USERNAME, PASSWORD, ENCRYPTION_METHOD) as client:
+        try:
+            await client.login()
+        except Exception as exception:  # pylint: disable=broad-except
+            print(exception)
+            return
+
+        # Print device information of Sagemcom F@st router
+        device_info = await client.get_device_info()
+        print(f"{device_info.id} {device_info.model_name}")
+
+        # Print connected devices
+        devices = await client.get_hosts()
+
+        for device in devices:
+            if device.active:
+                print(f"{device.id} - {device.name}")
+
+        # Run custom command, output is a dict
+        custom_command_output = await client.get_value_by_xpath("Device/Managers/Network/IPAddressInformations/IPv6/PrefixLan")
+        print(custom_command_output)
 
 asyncio.run(main())
 ```
@@ -60,13 +79,12 @@ asyncio.run(main())
 
 - Add proper exceptions + handling
 - Add helper function to determine if the model is using MD5 or SHA512 encryption for authentication
-- Add function to pass custom action
 - Document all functions
 
 ## Functions
 
 - `login()`
-- `get_device_info(raw=False)`
+- `get_device_info()`
 - `get_port_mappings()`
 - `get_hosts()`
 - `reboot()`
