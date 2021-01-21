@@ -185,7 +185,7 @@ class SagemcomClient:
 
                 if (
                     error["description"] != XMO_REQUEST_NO_ERR
-                    or error["description"] != "Ok"  # noqa: W503 # F@ST 4360AIR
+                    and error["description"] != "Ok"  # noqa: W503 # F@ST 4360AIR
                 ):
                     if error["description"] == XMO_REQUEST_ACTION_ERR:
                         raise UnauthorizedException(error)
@@ -222,9 +222,8 @@ class SagemcomClient:
         try:
             response = await self.__api_request_async([actions], True)
         except asyncio.TimeoutError as exception:
-            # Add retry logic for other hashing methods?
             raise LoginTimeoutException(
-                "Couldn't connect to the, most of the time this is due to using the wrong hashing method."
+                "Request timed-out. This is mainly due to using the wrong hashing method."
             ) from exception
 
         data = self.__get_response(response)
