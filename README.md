@@ -94,12 +94,34 @@ asyncio.run(main())
 ## Advanced
 
 ### Determine EncryptionMethod
+TODO
 
-### Exceptions
+### Run your custom commands
 
-### Get raw response
+Not all values can be retrieved by helper functions in this client implementation. By using XPath, you are able to return all values via the API. The result will be a dict response, or a BadRequestException when the XPath is not available.
 
-### Pass your custom action
+```python
+from sagemcom_api.exceptions import BadRequestException
+
+try:
+    result = await client.get_value_by_xpath("Device/DeviceSummary")
+except BadRequestException as exception:
+    print(exception)
+```
+
+### Use your own aiohttp ClientSession 
+
+> ClientSession is the heart and the main entry point for all client API operations. The session contains a cookie storage and connection pool, thus cookies and connections are shared between HTTP requests sent by the same session.
+
+In order to change settings like the time-out, it is possible to pass your custom [aiohttp ClientSession](https://docs.aiohttp.org/en/stable/client_advanced.html).
+
+```python
+from aiohttp import ClientSession, ClientTimeout
+
+session = ClientSession(timeout=ClientTimeout(100))
+client = SagemcomClient(session=session)
+```
+
 
 ## Inspired by
 

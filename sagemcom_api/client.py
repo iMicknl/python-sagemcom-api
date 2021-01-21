@@ -188,7 +188,7 @@ class SagemcomClient:
                     and error["description"] != "Ok"  # noqa: W503 # F@ST 4360AIR
                 ):
                     if error["description"] == XMO_REQUEST_ACTION_ERR:
-                        raise UnauthorizedException(error)
+                        raise BadRequestException(error)
 
                     raise UnknownException(error)
 
@@ -223,7 +223,7 @@ class SagemcomClient:
             response = await self.__api_request_async([actions], True)
         except asyncio.TimeoutError as exception:
             raise LoginTimeoutException(
-                "Request timed-out. This is mainly due to using the wrong hashing method."
+                "Request timed-out. This is mainly due to using the wrong encryption method."
             ) from exception
 
         data = self.__get_response(response)
@@ -235,9 +235,11 @@ class SagemcomClient:
         else:
             raise UnauthorizedException(data)
 
-    async def get_value_by_xpath(self, xpath: str, options: Optional[Dict] = {}):
+    async def get_value_by_xpath(
+        self, xpath: str, options: Optional[Dict] = {}
+    ) -> Dict:
         """
-        Retrieve raw value from router using XPATH.
+        Retrieve raw value from router using XPath.
 
         :param xpath: path expression
         :param options: optional options
