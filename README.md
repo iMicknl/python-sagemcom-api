@@ -32,13 +32,11 @@ The Sagemcom F@st series is used by multiple cable companies, where some cable c
 
 ## Installation
 
-_This package has not been published on PyPi yet since it is a work in progress._
-
 ```bash
-pip install sagemcom_api@git+https://github.com/iMicknl/python-sagemcom-api@v1.0.0
+pip install sagemcom_api
 ```
 
-## Usage
+## Getting Started
 
 Depending on the router model, Sagemcom is using different encryption methods for authentication, which can be found in [the table above](#supported-devices). This package supports MD5 and SHA512 encryption. If you receive a `LoginTimeoutException`, you will probably need to use another encryption type.
 
