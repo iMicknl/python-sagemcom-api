@@ -1,16 +1,18 @@
 # python-sagemcom-api
 
-(Unofficial) Python wrapper to interact with SagemCom F@st routers via internal API's. This package is utilizing async/await, thus Python 3.7+ is required. All responses are modelled using named tuples by default, however it is also possible to receive the raw request.
+(Unofficial) Python client to interact with SagemCom F@st routers via internal API's. This client offers helper functions to retrieve common used functions, but also offers functionality to do custom requests via XPATH notation.
+
+Python 3.7+ required.
 
 ## Features
 
-- Get (connected) devices (wifi and ethernet)
-- Get router information
-- Reboot router
+- Retrieve detailed information of Sagemcom F@st device
+- Retrieve connected devices (wifi and ethernet)
+- Reboot Sagemcom F@st device
 
 ## Supported devices
 
-The Sagemcom F@st series is in use by multiple cable companies, where some cable companies did rebrand the router. Examples are the b-box from Proximus, Home Hub from bell and the Smart Hub from BT.
+The Sagemcom F@st series is used by multiple cable companies, where some cable companies did rebrand the router. Examples are the b-box from Proximus, Home Hub from bell and the Smart Hub from BT.
 
 | Router Model         | Provider(s)          | Authentication Method |
 | -------------------- | -------------------- | --------------------- |

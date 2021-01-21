@@ -258,6 +258,10 @@ class SagemcomClient:
         data = await self.get_value_by_xpath("Device/Hosts/Hosts")
         devices = [Device(**d) for d in data]
 
+        if only_active:
+            active_devices = [d for d in devices if d.active is True]
+            return active_devices
+
         return devices
 
     async def get_port_mappings(self) -> List[PortMapping]:
