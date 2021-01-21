@@ -1,5 +1,2 @@
-from .client import *
-from .models import *
-from .exceptions import *
-
-__version__ = '0.3.0'
+"""Package to communicate with Sagemcom F@st internal APIs."""
+__version__ = "1.0.0"

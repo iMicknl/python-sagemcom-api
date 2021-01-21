@@ -1,0 +1,49 @@
+name: Linters
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+jobs:
+  analyse:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python 3.7
+        uses: actions/setup-python@v2.1.4
+        with:
+          python-version: 3.7
+
+      - name: Set up Poetry
+        uses: Gr1N/setup-poetry@v4
+
+      - name: Cache venv
+        uses: actions/cache@v2.1.3
+        with:
+          path: .venv
+          key: venv-${{ hashFiles('**/poetry.lock') }}
+
+      - name: Cache pre-commit
+        uses: actions/cache@v2.1.3
+        with:
+          path: ~/.cache/pre-commit/
+          key: ${{ runner.os }}-pre-commit-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('**/.pre-commit-config.yaml') }} # yamllint disable-line
+
+      - name: Install dependencies
+        run: poetry install
+
+      - name: Register problems matchers
+        run: |
+          echo "::add-matcher::.github/workflows/matchers/pylint.json"
+          echo "::add-matcher::.github/workflows/matchers/flake8.json"
+          echo "::add-matcher::.github/workflows/matchers/mypy.json"
+          echo "::add-matcher::.github/workflows/matchers/python.json"
+
+      - name: Apply all pre-commit
+        run: poetry run pre-commit run -a

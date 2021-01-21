@@ -1,113 +1,177 @@
-""" Python wrapper for the Sagemcom API """
-import aiohttp
+"""Client to communicate with Sagemcom F@st internal APIs."""
+from __future__ import annotations
 
 import asyncio
-import logging
-import time
 import hashlib
+import json
 import math
 import random
-import json
+from types import TracebackType
+from typing import Dict, List, Optional, Type
 
-from .models import *
-from .exceptions import *
+from aiohttp import ClientSession, ClientTimeout
+import humps
 
-class SagemcomClient(object):
-    """ Interface class for the Sagemcom API """
+from . import __version__
+from .const import (
+    API_ENDPOINT,
+    DEFAULT_TIMEOUT,
+    DEFAULT_USER_AGENT,
+    XMO_ACCESS_RESTRICTION_ERR,
+    XMO_AUTHENTICATION_ERR,
+    XMO_NO_ERR,
+    XMO_NON_WRITABLE_PARAMETER_ERR,
+    XMO_REQUEST_ACTION_ERR,
+    XMO_REQUEST_NO_ERR,
+    XMO_UNKNOWN_PATH_ERR,
+)
+from .enums import EncryptionMethod
+from .exceptions import (
+    AccessRestrictionException,
+    AuthenticationException,
+    BadRequestException,
+    LoginTimeoutException,
+    NonWritableParameterException,
+    UnauthorizedException,
+    UnknownException,
+    UnknownPathException,
+)
+from .models import Device, DeviceInfo, PortMapping
 
-    def __init__(self, host, username, password, authentication_method=EncryptionMethod.UNKNOWN, request_timeout=7):
+
+class SagemcomClient:
+    """Client to communicate with the Sagemcom API."""
+
+    def __init__(
+        self,
+        host,
+        username,
+        password,
+        authentication_method=EncryptionMethod.UNKNOWN,
+        session: ClientSession = None,
+    ):
         """
-        Constructor
+        Create a SagemCom client.
 
         :param host: the host of your Sagemcom router
         :param username: the username for your Sagemcom router
         :param password: the password for your Sagemcom router
-        :param authentication_method: the authentication method of your Sagemcom router
+        :param authentication_method: the auth method of your Sagemcom router
+        :param session: use a custom session, for example to configure the timeout
         """
-
         self.host = host
         self.username = username
-        self.authentication_method = str(authentication_method)
+        self.authentication_method = authentication_method
         self._password_hash = self.__generate_hash(password)
 
         self._current_nonce = None
-        self._server_nonce = ''
+        self._server_nonce = ""
         self._session_id = 0
         self._request_id = -1
-        self._request_timeout = int(request_timeout)
+
+        self.session = (
+            session
+            if session
+            else ClientSession(
+                headers={"User-Agent": f"{DEFAULT_USER_AGENT}/{__version__}"},
+                timeout=ClientTimeout(DEFAULT_TIMEOUT),
+            )
+        )
+
+    async def __aenter__(self) -> SagemcomClient:
+        """TODO."""
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: Optional[Type[BaseException]],
+        exc_value: Optional[BaseException],
+        traceback: Optional[TracebackType],
+    ) -> None:
+        """Close session on exit."""
+        await self.close()
+
+    async def close(self) -> None:
+        """Close the websession."""
+        await self.session.close()
 
     def __generate_nonce(self):
-        """ Generate pseudo random number (nonce) to avoid replay attacks """
+        """Generate pseudo random number (nonce) to avoid replay attacks."""
         self._current_nonce = math.floor(random.randrange(0, 1) * 500000)
 
     def __generate_request_id(self):
-        """ Generate sequential request ID """
+        """Generate sequential request ID."""
         self._request_id += 1
 
-    def __generate_hash(self, value):
-        """ Hash value with MD5 or SHA12 and return HEX """
-        bytes_object = bytes(value, encoding='utf-8')
+    def __generate_hash(self, value, authentication_method=None):
+        """Hash value with selected encryption method and return HEX value."""
+        auth_method = authentication_method or self.authentication_method
 
-        # TODO Solve ugly string workaround for enums
-        if self.authentication_method == str(EncryptionMethod.MD5):
+        bytes_object = bytes(value, encoding="utf-8")
+
+        if auth_method == EncryptionMethod.MD5:
             return hashlib.md5(bytes_object).hexdigest()
 
-        if self.authentication_method == str(EncryptionMethod.SHA512):
+        if auth_method == EncryptionMethod.SHA512:
             return hashlib.sha512(bytes_object).hexdigest()
 
         return value
 
     def __get_credential_hash(self):
-        """ Build credential hash """
-        return self.__generate_hash(self.username + ":" + self._server_nonce + ":" + self._password_hash)
+        """Build credential hash."""
+        return self.__generate_hash(
+            self.username + ":" + self._server_nonce + ":" + self._password_hash
+        )
 
     def __generate_auth_key(self):
-        """ Build auth key """
+        """Build auth key."""
         credential_hash = self.__get_credential_hash()
-        auth_string = str(credential_hash) + ":" + str(self._request_id) + \
-            ":" + str(self._current_nonce) + ":JSON:/cgi/json-req"
-
+        auth_string = f"{credential_hash}:{self._request_id}:{self._current_nonce}:JSON:{API_ENDPOINT}"
         self._auth_key = self.__generate_hash(auth_string)
 
     def __get_response_error(self, response):
-        """ TODO """
+        """Retrieve response error from result."""
         try:
-            value = response['reply']['error']
+            value = response["reply"]["error"]
         except KeyError:
             value = None
 
         return value
 
     def __get_response(self, response, index=0):
-        """ TODO """
+        """Retrieve response from result."""
         try:
-            value = response['reply']['actions'][index]['callbacks'][index]['parameters']
+            value = response["reply"]["actions"][index]["callbacks"][index][
+                "parameters"
+            ]
         except KeyError:
             value = None
 
         return value
 
     def __get_response_value(self, response, index=0):
-        """ TODO """
+        """Retrieve response value from value."""
         try:
             value = self.__get_response(response, index)["value"]
         except KeyError:
             value = None
 
+        # Rewrite result to snake_case
+        value = humps.decamelize(value)
+
         return value
 
     async def __api_request_async(self, actions, priority=False):
-        """ Build request to the internal JSON-req API """
-
+        """Build request to the internal JSON-req API."""
         # Auto login
-        if self._server_nonce == "" and actions[0]['method'] != "logIn":
+        if self._server_nonce == "" and actions[0]["method"] != "logIn":
             await self.login()
 
         self.__generate_request_id()
         self.__generate_nonce()
         self.__generate_auth_key()
 
-        api_host = f"http://{self.host}/cgi/json-req"
+        api_host = f"http://{self.host}{API_ENDPOINT}"
 
         payload = {
             "request": {
@@ -116,202 +180,174 @@ class SagemcomClient(object):
                 "priority": priority,
                 "actions": actions,
                 "cnonce": self._current_nonce,
-                "auth-key": self._auth_key
+                "auth-key": self._auth_key,
             }
         }
 
-        timeout = aiohttp.ClientTimeout(total=self._request_timeout)
+        async with self.session.post(
+            api_host, data="req=" + json.dumps(payload, separators=(",", ":"))
+        ) as response:
 
-        try:
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.post(api_host, data="req=" + json.dumps(payload, separators=(',', ':'))) as response:
+            if response.status == 400:
+                result = await response.text()
+                raise BadRequestException(result)
 
-                    if (response.status is 400):
-                        result = await response.text()
-                        raise BadRequestException
+            if response.status != 200:
+                result = await response.text()
+                raise UnknownException(result)
 
-                    if (response.status is not 200):
-                        result = await response.text()
-                        raise UnknownException
+            if response.status == 200:
+                result = await response.json()
+                error = self.__get_response_error(result)
 
-                    if (response.status is 200):
-                        result = await response.json()
-                        error = self.__get_response_error(result)
+                # No errors
+                if (
+                    error["description"] == XMO_REQUEST_NO_ERR
+                    or error["description"] == "Ok"  # NOQA: W503
+                ):
+                    return result
 
-                        if (error['description'] != 'XMO_REQUEST_NO_ERR'):
-                            if (error['description'] == 'XMO_REQUEST_ACTION_ERR'):
-                                raise UnauthorizedException
+                # Error in one of the actions
+                if error["description"] == XMO_REQUEST_ACTION_ERR:
 
-                            raise UnknownException
+                    # TODO How to support multiple actions + error handling?
+                    actions = result["reply"]["actions"]
+                    for action in actions:
+                        action_error = action["error"]
+                        action_error_description = action_error["description"]
 
-                        return result
+                        if action_error_description == XMO_NO_ERR:
+                            continue
 
-        except asyncio.TimeoutError as exception:
-            raise TimeoutException
+                        if action_error_description == XMO_AUTHENTICATION_ERR:
+                            raise AuthenticationException(action_error)
 
-        except:
-            raise UnknownException
+                        if action_error_description == XMO_ACCESS_RESTRICTION_ERR:
+                            raise AccessRestrictionException(action_error)
+
+                        if action_error_description == XMO_NON_WRITABLE_PARAMETER_ERR:
+                            raise NonWritableParameterException(action_error)
+
+                        if action_error_description == XMO_UNKNOWN_PATH_ERR:
+                            raise UnknownPathException(action_error)
+
+                        raise UnknownException(action_error)
+
+                return result
 
     async def login(self):
+        """TODO."""
         actions = {
             "method": "logIn",
             "parameters": {
                 "user": self.username,
-                "persistent": "true",
+                "persistent": True,
                 "session-options": {
-                    "nss": [
-                        {
-                            "name": "gtw",
-                            "uri": "http://sagemcom.com/gateway-data"
-                        }
-                    ],
+                    "nss": [{"name": "gtw", "uri": "http://sagemcom.com/gateway-data"}],
                     "language": "ident",
-                    "context-flags": {
-                        "get-content-name": True,
-                        "local-time": True
-                    },
+                    "context-flags": {"get-content-name": True, "local-time": True},
                     "capability-depth": 2,
                     "capability-flags": {
                         "name": True,
                         "default-value": False,
                         "restriction": True,
-                        "description": False
+                        "description": False,
                     },
                     "time-format": "ISO_8601",
                     "write-only-string": "_XMO_WRITE_ONLY_",
-                    "undefined-write-only-string": "_XMO_UNDEFINED_WRITE_ONLY_"
-                }
-            }
+                    "undefined-write-only-string": "_XMO_UNDEFINED_WRITE_ONLY_",
+                },
+            },
         }
 
-        response = await self.__api_request_async([actions], True)
+        try:
+            response = await self.__api_request_async([actions], True)
+        except asyncio.TimeoutError as exception:
+            raise LoginTimeoutException(
+                "Request timed-out. This is mainly due to using the wrong encryption method."
+            ) from exception
+
         data = self.__get_response(response)
 
-        if data['id'] is not None and data['nonce'] is not None:
-            self._session_id = data['id']
-            self._server_nonce = data['nonce']
+        if data["id"] is not None and data["nonce"] is not None:
+            self._session_id = data["id"]
+            self._server_nonce = data["nonce"]
             return True
         else:
-            raise UnauthorizedException
+            raise UnauthorizedException(data)
 
-    async def get_device_info(self, raw=False):
-        actions = {
-            "id": 0,
-            "method": "getValue",
-            "xpath": "Device/DeviceInfo"
-        }
+    async def get_value_by_xpath(
+        self, xpath: str, options: Optional[Dict] = {}
+    ) -> Dict:
+        """
+        Retrieve raw value from router using XPath.
 
-        response = await self.__api_request_async([actions], False)
-        data = self.__get_response_value(response)
-
-        if raw:
-            return data
-
-        info = data["DeviceInfo"]
-
-        device_info = DeviceInfo(
-            mac_address=info["MACAddress"],
-            serial_number=info["SerialNumber"],
-            manufacturer=info["Manufacturer"],
-            model_name=info["ModelName"],
-            model_number=info["ModelNumber"],
-            software_version=info["SoftwareVersion"],
-            hardware_version=info["HardwareVersion"],
-            uptime=info["UpTime"],
-            reboot_count=info["RebootCount"],
-            router_name=info["RouterName"],
-            bootloader_version=info["BootloaderVersion"]
-        )
-
-        return device_info
-
-    async def get_port_mappings(self, raw=False):
-        actions = {
-            "id": 0,
-            "method": "getValue",
-            "xpath": "Device/NAT/PortMappings"
-        }
-
-        response = await self.__api_request_async([actions], False)
-        data = self.__get_response_value(response)
-
-        if raw:
-            return data
-
-        return data
-
-    async def get_hosts(self, raw=False):
-        actions = {
-            "id": 0,
-            "method": "getValue",
-            "xpath": "Device/Hosts/Hosts",
-            "options": {
-                "capability-flags": {
-                      "interface": True,
-                }
-            }
-        }
-
-        response = await self.__api_request_async([actions], False)
-        data = self.__get_response_value(response)
-
-        if raw:
-            return data
-
-        return self.parse_devices(data)
-
-
-    async def get_ipv6_prefix_lan(self):
-        actions = {
-            "id": 0,
-            "method": "getValue",
-            "xpath": "Device/Managers/Network/IPAddressInformations/IPv6/PrefixLan",
-            "options": {
-                "capability-flags": {
-                      "interface": True,
-                }
-            }
-        }
-        response = await self.__api_request_async([actions], False)
-        data = self.__get_response_value(response)
-
-        return data
-
-    async def reboot(self):
-        actions = {
-            "method": "reboot",
-            "xpath": "Device",
-            "parameters": {
-                "source": "GUI"
-            }
-        }
+        :param xpath: path expression
+        :param options: optional options
+        """
+        actions = {"id": 0, "method": "getValue", "xpath": xpath, "options": options}
 
         response = await self.__api_request_async([actions], False)
         data = self.__get_response_value(response)
 
         return data
 
-    def parse_devices(self, data, only_active=True) -> list:
+    async def set_value_by_xpath(
+        self, xpath: str, value: str, options: Optional[Dict] = {}
+    ) -> Dict:
+        """
+        Retrieve raw value from router using XPath.
 
-        devices = []
+        :param xpath: path expression
+        :param value: value
+        :param options: optional options
+        """
+        actions = {
+            "id": 0,
+            "method": "setValue",
+            "xpath": xpath,
+            "parameters": {"value": str(value)},
+            "options": options,
+        }
 
-        for device in data:
-            if not only_active or device['Active']:
+        response = await self.__api_request_async([actions], False)
+        print(response)
 
-                device = Device(
-                    mac_address=device['PhysAddress'].upper(),
-                    ip_address=device['IPAddress'],
-                    ipv4_addresses=device['IPv4Addresses'],
-                    ipv6_addresses=device['IPv6Addresses'],
-                    address_source=device['AddressSource'],
-                    name=device['UserHostName'] or device['HostName'],
-                    interface=device['InterfaceType'],
-                    active=device['Active'],
-                    user_friendly_name=device['UserFriendlyName'],
-                    detected_device_type=device['DetectedDeviceType'].lower(),
-                    user_device_type=device['UserDeviceType'].lower()
-                )
+        return response
 
-                devices.append(device)
+    async def get_device_info(self) -> DeviceInfo:
+        """Retrieve information about Sagemcom F@st device."""
+        data = await self.get_value_by_xpath("Device/DeviceInfo")
+
+        return DeviceInfo(**data.get("device_info"))
+
+    async def get_hosts(self, only_active: Optional[bool] = False) -> List[Device]:
+        """Retrieve hosts connected to Sagemcom F@st device."""
+        data = await self.get_value_by_xpath("Device/Hosts/Hosts")
+        devices = [Device(**d) for d in data]
+
+        if only_active:
+            active_devices = [d for d in devices if d.active is True]
+            return active_devices
 
         return devices
+
+    async def get_port_mappings(self) -> List[PortMapping]:
+        """Retrieve configured Port Mappings on Sagemcom F@st device."""
+        data = await self.get_value_by_xpath("Device/NAT/PortMappings")
+        port_mappings = [PortMapping(**p) for p in data]
+
+        return port_mappings
+
+    async def reboot(self):
+        """Reboot Sagemcom F@st device."""
+        action = {
+            "method": "reboot",
+            "xpath": "Device",
+            "parameters": {"source": "GUI"},
+        }
+
+        response = await self.__api_request_async([action], False)
+        data = self.__get_response_value(response)
+
+        return data

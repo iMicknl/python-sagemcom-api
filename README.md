@@ -1,16 +1,19 @@
-# python-sagemcom-api
+# Sagemcom API Client in Python
 
-(Unofficial) Python wrapper to interact with SagemCom F@st routers via internal API's. This package is utilizing async/await, thus Python 3.7+ is required. All responses are modelled using named tuples by default, however it is also possible to receive the raw request.
+(Unofficial) async Python client to interact with Sagemcom F@st routers via internal API's. This client offers helper functions to retrieve common used functions, but also offers functionality to do custom requests via XPATH notation.
+
+Python 3.7+ required.
 
 ## Features
 
-- Get (connected) devices (wifi and ethernet)
-- Get router information
-- Reboot router
+- Retrieve detailed information of your Sagemcom F@st device
+- Retrieve connected devices (wifi and ethernet)
+- Reboot Sagemcom F@st device
+- Retrieve and set all values of your Sagemcom F@st device
 
 ## Supported devices
 
-The Sagemcom F@st series is in use by multiple cable companies, where some cable companies did rebrand the router. Examples are the b-box from Proximus, Home Hub from bell and the Smart Hub from BT.
+The Sagemcom F@st series is used by multiple cable companies, where some cable companies did rebrand the router. Examples are the b-box from Proximus, Home Hub from bell and the Smart Hub from BT.
 
 | Router Model         | Provider(s)          | Authentication Method |
 | -------------------- | -------------------- | --------------------- |
@@ -29,57 +32,109 @@ The Sagemcom F@st series is in use by multiple cable companies, where some cable
 
 ## Installation
 
-_This package has not been published on PyPi yet since it is a work in progress._
-
 ```bash
-pip install sagemcom_api@git+https://github.com/iMicknl/python-sagemcom-api
+pip install sagemcom_api
 ```
 
-## Usage
+## Getting Started
 
-Depending on the router model, Sagemcom is using different encryption methods for authentication, which can be found in [the table above](#supported-devices). This package supports MD5 and SHA512 encryption. You don't need to login before every function call, the package will login automatically if necessary.
+Depending on the router model, Sagemcom is using different encryption methods for authentication, which can be found in [the table above](#supported-devices). This package supports MD5 and SHA512 encryption. If you receive a `LoginTimeoutException`, you will probably need to use another encryption type.
+
+The following script can be used as a quickstart.
 
 ```python
 import asyncio
-from sagemcom_api import SagemcomClient, EncryptionMethod
+from sagemcom_api.enums import EncryptionMethod
+from sagemcom_api.client import SagemcomClient
 
-async def main():
-    # Choose EncryptionMethod.MD5, EncryptionMethod.SHA512 or EncryptionMethod.Unknown
-    sagemcom = SagemcomClient('local ip address', 'username', 'password', EncryptionMethod.MD5)
+HOST = ""
+USERNAME = ""
+PASSWORD = ""
+ENCRYPTION_METHOD = EncryptionMethod.MD5 # or EncryptionMethod.SHA512
 
-    try:
-        device_info = await sagemcom.get_device_info()
-        print(device_info)
-    except:
-        print('error')
+async def main() -> None:
+    async with SagemcomClient(HOST, USERNAME, PASSWORD, ENCRYPTION_METHOD) as client:
+        try:
+            await client.login()
+        except Exception as exception:  # pylint: disable=broad-except
+            print(exception)
+            return
+
+        # Print device information of Sagemcom F@st router
+        device_info = await client.get_device_info()
+        print(f"{device_info.id} {device_info.model_name}")
+
+        # Print connected devices
+        devices = await client.get_hosts()
+
+        for device in devices:
+            if device.active:
+                print(f"{device.id} - {device.name}")
+
+        # Retrieve values via XPath notation, output is a dict
+        custom_command_output = await client.get_value_by_xpath("Device/UserInterface/AdvancedMode")
+        print(custom_command_output)
+
+        # Set value via XPath notation
+        custom_command_output = await client.set_value_by_xpath("Device/UserInterface/AdvancedMode", "true")
+        print(custom_command_output)
 
 asyncio.run(main())
 ```
 
-## TODO
-
-- Add proper exceptions + handling
-- Add helper function to determine if the model is using MD5 or SHA512 encryption for authentication
-- Add function to pass custom action
-- Document all functions
-
 ## Functions
 
 - `login()`
-- `get_device_info(raw=False)`
-- `get_port_mappings()`
+- `get_device_info()`
 - `get_hosts()`
+- `get_port_mappings()`
 - `reboot()`
+- `get_value_by_xpath(xpath)`
+- `set_value_by_xpath(xpath, value)`
 
 ## Advanced
 
-### Determine EncryptionMethod
+### Determine the EncryptionMethod
+(not supported yet)
 
-### Exceptions
+### Handle exceptions
+Some functions may cause an error when an attempt is made to execute it. These exceptions are thrown by the client and need to be [handled in your Python program](https://docs.python.org/3/tutorial/errors.html#handling-exceptions). Best practice is to catch some specific exceptions and handle them gracefully.
 
-### Get raw response
+```python
+from sagemcom_api.exceptions import *
 
-### Pass your custom action
+try:
+    await client.set_value_by_xpath("Device/UserInterface/AdvancedMode", "true")
+except NonWritableParameterException as exception:
+    print("You don't have rights to write to this parameter.")
+except UnknownPathException as exception:
+    print("The xpath does not exist.")
+```
+
+### Run your custom commands
+
+Not all values can be retrieved by helper functions in this client implementation. By using XPath, you are able to return all values via the API. The result will be a dict response, or [an exception](#handle-exceptions) when the attempt was not successful.
+
+```python
+try:
+    result = await client.get_value_by_xpath("Device/DeviceSummary")
+except Exception as exception:
+    print(exception)
+```
+
+### Use your own aiohttp ClientSession 
+
+> ClientSession is the heart and the main entry point for all client API operations. The session contains a cookie storage and connection pool, thus cookies and connections are shared between HTTP requests sent by the same session.
+
+In order to change settings like the time-out, it is possible to pass your custom [aiohttp ClientSession](https://docs.aiohttp.org/en/stable/client_advanced.html).
+
+```python
+from aiohttp import ClientSession, ClientTimeout
+
+session = ClientSession(timeout=ClientTimeout(100))
+client = SagemcomClient(session=session)
+```
+
 
 ## Inspired by
 
