@@ -77,24 +77,34 @@ async def main() -> None:
 asyncio.run(main())
 ```
 
-## TODO
-
-- Add proper exceptions + handling
-- Add helper function to determine if the model is using MD5 or SHA512 encryption for authentication
-- Document all functions
-
 ## Functions
 
 - `login()`
 - `get_device_info()`
-- `get_port_mappings()`
 - `get_hosts()`
+- `get_port_mappings()`
 - `reboot()`
+- `get_value_by_xpath(xpath)`
+- `set_value_by_xpath(xpath, value)`
 
 ## Advanced
 
-### Determine EncryptionMethod
+### Determine the EncryptionMethod
 TODO
+
+### Handle exceptions
+Some functions may cause an error when an attempt is made to execute it. These exceptions are thrown by the client and need to be [handled in your Python program](https://docs.python.org/3/tutorial/errors.html#handling-exceptions). Best practice is to handle the exceptions and 
+
+```python
+from sagemcom_api.exceptions import *
+
+try:
+    await client.set_value_by_xpath("Device/UserInterface/AdvancedMode", "true")
+except NonWritableParameterException as exception:
+    print("You don't have rights to write to this parameter.")
+except UnknownPathException as exception:
+    print("The xptah does not exist.")
+```
 
 ### Run your custom commands
 

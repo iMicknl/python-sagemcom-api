@@ -12,7 +12,11 @@ from typing import Dict, List, Optional, Type
 from aiohttp import ClientSession, ClientTimeout
 import humps
 
+from . import __version__
 from .const import (
+    API_ENDPOINT,
+    DEFAULT_TIMEOUT,
+    DEFAULT_USER_AGENT,
     XMO_ACCESS_RESTRICTION_ERR,
     XMO_AUTHENTICATION_ERR,
     XMO_NO_ERR,
@@ -33,9 +37,6 @@ from .exceptions import (
     UnknownPathException,
 )
 from .models import Device, DeviceInfo, PortMapping
-
-DEFAULT_TIMEOUT = 7
-API_ENDPOINT = "/cgi/json-req"
 
 
 class SagemcomClient:
@@ -67,10 +68,14 @@ class SagemcomClient:
         self._server_nonce = ""
         self._session_id = 0
         self._request_id = -1
+
         self.session = (
             session
             if session
-            else ClientSession(timeout=ClientTimeout(DEFAULT_TIMEOUT))
+            else ClientSession(
+                headers={"User-Agent": f"{DEFAULT_USER_AGENT}/{__version__}"},
+                timeout=ClientTimeout(DEFAULT_TIMEOUT),
+            )
         )
 
     async def __aenter__(self) -> SagemcomClient:
@@ -236,7 +241,7 @@ class SagemcomClient:
             "method": "logIn",
             "parameters": {
                 "user": self.username,
-                "persistent": "true",
+                "persistent": True,
                 "session-options": {
                     "nss": [{"name": "gtw", "uri": "http://sagemcom.com/gateway-data"}],
                     "language": "ident",
