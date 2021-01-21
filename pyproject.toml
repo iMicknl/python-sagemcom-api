@@ -7,10 +7,14 @@ license = "MIT"
 readme = "README.md"
 homepage = "https://github.com/iMicknl/python-sagemcom-api"
 repository = "https://github.com/iMicknl/python-sagemcom-api"
+keywords = ["sagemcom", "f@st"]
 
 packages = [
     { include = "sagemcom_api" }
 ]
+
+[tool.poetry.urls]
+"Bug Tracker" = "https://github.com/iMicknl/python-sagemcom-api/issues"
 
 [tool.poetry.dependencies]
 python = ">=3.7,<4.0"

@@ -115,14 +115,12 @@ except UnknownPathException as exception:
 
 ### Run your custom commands
 
-Not all values can be retrieved by helper functions in this client implementation. By using XPath, you are able to return all values via the API. The result will be a dict response, or a BadRequestException when the XPath is not available.
+Not all values can be retrieved by helper functions in this client implementation. By using XPath, you are able to return all values via the API. The result will be a dict response, or [an exception](#handle-exceptions) when the attempt was not successful.
 
 ```python
-from sagemcom_api.exceptions import BadRequestException
-
 try:
     result = await client.get_value_by_xpath("Device/DeviceSummary")
-except BadRequestException as exception:
+except Exception as exception:
     print(exception)
 ```
 
