@@ -47,7 +47,7 @@ class SagemcomClient:
         host,
         username,
         password,
-        authentication_method=EncryptionMethod.UNKNOWN,
+        authentication_method,
         session: ClientSession = None,
     ):
         """
