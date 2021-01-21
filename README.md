@@ -20,6 +20,7 @@ The Sagemcom F@st series is used by multiple cable companies, where some cable c
 | Sagemcom F@st 3864   | Optus                | sha512                |
 | Sagemcom F@st 3865b  | Proximus (b-box3)    | md5                   |
 | Sagemcom F@st 3890V3 | Delta / Zeelandnet   | md5                   |
+| Sagemcom F@st 4360Air| KPN                  | md5                   |
 | Sagemcom F@st 5250   | Bell (Home Hub 2000) | md5                   |
 | Sagemcom F@st 5280   |                      | sha512                |
 | Sagemcom F@st 5364   | BT (Smart Hub)       | md5                   |
