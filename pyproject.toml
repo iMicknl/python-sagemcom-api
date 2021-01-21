@@ -22,7 +22,7 @@ aiohttp = "^3.7.3"
 pyhumps = "^1.6.1"
 
 [tool.poetry.dev-dependencies]
-pytest = "^4.6"
+pytest = "^6.2"
 pre-commit = "^2.9.3"
 black = "^20.8b1"
 pylint = "^2.6.0"
