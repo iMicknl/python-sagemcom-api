@@ -4,12 +4,7 @@ from enum import Enum
 
 
 class EncryptionMethod(Enum):
-    """TODO."""
+    """Encryption method defining the password hash."""
 
-    def __str__(self):
-        """TODO."""
-        return str(self.value)
-
-    MD5 = "md5"
-    SHA512 = "sha512"
-    UNKNOWN = "unknown"
+    MD5 = "MD5"
+    SHA512 = "SHA512"
