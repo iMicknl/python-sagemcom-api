@@ -8,6 +8,7 @@ import math
 import random
 from types import TracebackType
 from typing import Dict, List, Optional, Type
+import urllib.parse
 
 from aiohttp import ClientSession, ClientTimeout
 import humps
@@ -285,7 +286,12 @@ class SagemcomClient:
         :param xpath: path expression
         :param options: optional options
         """
-        actions = {"id": 0, "method": "getValue", "xpath": xpath, "options": options}
+        actions = {
+            "id": 0,
+            "method": "getValue",
+            "xpath": urllib.parse.urlencode(xpath),
+            "options": options,
+        }
 
         response = await self.__api_request_async([actions], False)
         data = self.__get_response_value(response)
