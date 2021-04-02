@@ -28,6 +28,7 @@ The Sagemcom F@st series is used by multiple cable companies, where some cable c
 | Sagemcom F@st 5370e   | Telia                | sha512                |                               |
 | Sagemcom F@st 5566    | Bell (Home Hub 3000) | md5                   | username: guest, password: "" |
 | Sagemcom F@st 5655V2  | MásMóvil             | md5                   |                               |
+| Sagemcom F@st 5657IL  |                      | md5                   |                               |
 | Speedport Pro         | Telekom              | md5                   |                               |
 
 > Contributions welcome. If you router model is supported by this package, but not in the list above, please create [an issue](https://github.com/iMicknl/python-sagemcom-api/issues/new) or pull request.
