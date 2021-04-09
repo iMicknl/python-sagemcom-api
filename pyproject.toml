@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "sagemcom_api"
-version = "1.0.3"
+version = "1.0.4"
 description = "Python client to interact with SagemCom F@st routers via internal API's."
 authors = ["Mick Vleeshouwer <mick@imick.nl>"]
 license = "MIT"
