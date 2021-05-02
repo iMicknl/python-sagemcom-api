@@ -243,7 +243,7 @@ class SagemcomClient:
                 return result
 
     async def login(self):
-        """TODO."""
+        """Login to the SagemCom F@st router using a username and password."""
         actions = {
             "method": "logIn",
             "parameters": {
@@ -271,7 +271,7 @@ class SagemcomClient:
             response = await self.__api_request_async([actions], True)
         except asyncio.TimeoutError as exception:
             raise LoginTimeoutException(
-                "Request timed-out. This is mainly due to using the wrong encryption method."
+                "Login request timed-out. This could be caused by using the wrong encryption method, or using a (non) SSL connection."
             ) from exception
 
         data = self.__get_response(response)
@@ -293,6 +293,18 @@ class SagemcomClient:
         self._server_nonce = ""
         self._request_id = -1
 
+    async def get_encryption_method(self):
+        """Automatically decide which encryption method to use for authentication."""
+        for encryption_method in EncryptionMethod:
+            try:
+                self.authentication_method = encryption_method
+                await self.login()
+                return encryption_method
+            except LoginTimeoutException:
+                pass
+
+        return None
+    
     async def get_value_by_xpath(self, xpath: str, options: dict | None = None) -> dict:
         """
         Retrieve raw value from router using XPath.
