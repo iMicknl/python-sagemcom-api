@@ -32,6 +32,12 @@ class UnknownPathException(Exception):
     pass
 
 
+class MaximumSessionCountException(Exception):
+    """Raised when the maximum session count is reached."""
+
+    pass
+
+
 # Exceptions provided by this library
 # TODO Validate our own errors
 class BadRequestException(Exception):
