@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Type
 import urllib.parse
 
 from aiohttp import ClientSession, ClientTimeout
+from aiohttp.connector import TCPConnector
 import humps
 
 from . import __version__
@@ -52,6 +53,8 @@ class SagemcomClient:
         password,
         authentication_method,
         session: ClientSession = None,
+        ssl=False,
+        verify_ssl=True,
     ):
         """
         Create a SagemCom client.
@@ -67,6 +70,8 @@ class SagemcomClient:
         self.authentication_method = authentication_method
         self._password_hash = self.__generate_hash(password)
 
+        self.protocol = "https" if ssl else "http"
+
         self._current_nonce = None
         self._server_nonce = ""
         self._session_id = 0
@@ -78,6 +83,7 @@ class SagemcomClient:
             else ClientSession(
                 headers={"User-Agent": f"{DEFAULT_USER_AGENT}/{__version__}"},
                 timeout=ClientTimeout(DEFAULT_TIMEOUT),
+                connector=TCPConnector(ssl=verify_ssl),
             )
         )
 
@@ -174,7 +180,7 @@ class SagemcomClient:
         self.__generate_nonce()
         self.__generate_auth_key()
 
-        api_host = f"http://{self.host}{API_ENDPOINT}"
+        api_host = f"{self.protocol}://{self.host}{API_ENDPOINT}"
 
         payload = {
             "request": {
