@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Type
 import urllib.parse
 
 from aiohttp import ClientSession, ClientTimeout
+from aiohttp.connector import TCPConnector
 import humps
 
 from . import __version__
@@ -51,7 +52,7 @@ class SagemcomClient:
         authentication_method,
         session: ClientSession = None,
         ssl=False,
-        verify_ssl=False,
+        verify_ssl=True,
     ):
         """
         Create a SagemCom client.
@@ -80,7 +81,7 @@ class SagemcomClient:
             else ClientSession(
                 headers={"User-Agent": f"{DEFAULT_USER_AGENT}/{__version__}"},
                 timeout=ClientTimeout(DEFAULT_TIMEOUT),
-                ssl=verify_ssl,
+                connector=TCPConnector(ssl=verify_ssl),
             )
         )
 
