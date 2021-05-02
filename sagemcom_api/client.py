@@ -20,6 +20,7 @@ from .const import (
     DEFAULT_USER_AGENT,
     XMO_ACCESS_RESTRICTION_ERR,
     XMO_AUTHENTICATION_ERR,
+    XMO_MAX_SESSION_COUNT_ERR,
     XMO_NO_ERR,
     XMO_NON_WRITABLE_PARAMETER_ERR,
     XMO_REQUEST_ACTION_ERR,
@@ -32,6 +33,7 @@ from .exceptions import (
     AuthenticationException,
     BadRequestException,
     LoginTimeoutException,
+    MaximumSessionCountException,
     NonWritableParameterException,
     UnauthorizedException,
     UnknownException,
@@ -231,6 +233,9 @@ class SagemcomClient:
 
                         if action_error_description == XMO_UNKNOWN_PATH_ERR:
                             raise UnknownPathException(action_error)
+
+                        if action_error_description == XMO_MAX_SESSION_COUNT_ERR:
+                            raise MaximumSessionCountException(action_error)
 
                         raise UnknownException(action_error)
 
