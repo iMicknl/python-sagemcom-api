@@ -1,4 +1,5 @@
-# This workflow will upload a Python Package using Poetry when a release is published
+# This workflow will upload a Python Package using
+# Poetry when a release is published
 
 name: Publish Python Package (PyPi)
 
@@ -10,7 +11,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
 
-    steps:
+  steps:
     - uses: actions/checkout@v2
     - name: Set up Python
       uses: actions/setup-python@v2
