@@ -112,7 +112,9 @@ asyncio.run(main())
 
 ### Determine the EncryptionMethod
 
-(not supported yet)
+If you are not sure which encryption method to use, you can leave it empty or pass `None` and use `get_encryption_method` to determine the encryption method.
+
+`get_encryption_method` will return an `EncryptionMethod` or `None` when no match is found. Best would be to use this function only during your initial investigation. 
 
 ### Handle exceptions
 
