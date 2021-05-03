@@ -328,7 +328,7 @@ class SagemcomClient:
             except LoginTimeoutException:
                 pass
 
-        return None
+        raise LoginTimeoutException
     
     async def get_value_by_xpath(self, xpath: str, options: dict | None = None) -> dict:
         """

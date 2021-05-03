@@ -114,7 +114,9 @@ asyncio.run(main())
 
 If you are not sure which encryption method to use, you can leave it empty or pass `None` and use `get_encryption_method` to determine the encryption method.
 
-`get_encryption_method` will return an `EncryptionMethod` or `None` when no match is found. Best would be to use this function only during your initial investigation. 
+`get_encryption_method` will return an `EncryptionMethod` when a match is found. Best would be to use this function only during your initial investigation. 
+
+This function will throw a `LoginTimeoutException` when no match is found, since this is still a HTTP Time Out. We are not sure if this is caused by the wrong encrypton method, or by using an inaccessible host.
 
 ### Handle exceptions
 
