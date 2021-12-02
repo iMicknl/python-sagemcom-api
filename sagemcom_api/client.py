@@ -288,6 +288,15 @@ class SagemcomClient:
         else:
             raise UnauthorizedException(data)
 
+    async def logout(self):
+        actions = {
+            "id": 0,
+            "method": "logOut"
+        }
+
+        response = await self.__api_request_async([actions], True)
+        data = self.__get_response(response)
+
     async def get_value_by_xpath(
         self, xpath: str, options: Optional[Dict] = {}
     ) -> Dict:
