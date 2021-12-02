@@ -334,9 +334,18 @@ class SagemcomClient:
 
     async def get_device_info(self) -> DeviceInfo:
         """Retrieve information about Sagemcom F@st device."""
-        data = await self.get_value_by_xpath("Device/DeviceInfo")
-
-        return DeviceInfo(**data.get("device_info"))
+        try:
+            data = await self.get_value_by_xpath("Device/DeviceInfo")
+            return DeviceInfo(**data.get("device_info"))
+        except UnknownPathException:
+            device_info = DeviceInfo()
+            device_info.mac_address = await self.get_value_by_xpath("Device/DeviceInfo/MACAddress")
+            device_info.model_name = await self.get_value_by_xpath("Device/DeviceInfo/ModelNumber")
+            device_info.model_number = await self.get_value_by_xpath("Device/DeviceInfo/ProductClass")
+            device_info.product_class = await self.get_value_by_xpath("Device/DeviceInfo/ProductClass")
+            device_info.serial_number = await self.get_value_by_xpath("Device/DeviceInfo/SerialNumber")
+            device_info.software_version = await self.get_value_by_xpath("Device/DeviceInfo/SoftwareVersion")
+            return device_info
 
     async def get_hosts(self, only_active: Optional[bool] = False) -> List[Device]:
         """Retrieve hosts connected to Sagemcom F@st device."""
