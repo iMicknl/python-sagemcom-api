@@ -289,6 +289,7 @@ class SagemcomClient:
             raise UnauthorizedException(data)
 
     async def logout(self):
+        """Log out of the Sagemcom F@st device."""
         actions = {
             "id": 0,
             "method": "logOut"
