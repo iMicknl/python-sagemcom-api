@@ -173,7 +173,7 @@ class SagemcomClient:
     async def __api_request_async(self, actions, priority=False):
         """Build request to the internal JSON-req API."""
         # Auto login
-        if self._server_nonce == "" and actions[0]["method"] != "logIn":
+        if self._server_nonce == "" and actions[0]["method"] != "logIn" and actions[0]["method"] != "logOut":
             await self.login()
 
         self.__generate_request_id()
