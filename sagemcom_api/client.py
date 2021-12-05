@@ -173,7 +173,7 @@ class SagemcomClient:
     async def __api_request_async(self, actions, priority=False):
         """Build request to the internal JSON-req API."""
         # Auto login
-        if self._server_nonce == "" and actions[0]["method"] != "logIn":
+        if self._server_nonce == "" and actions[0]["method"] != "logIn" and actions[0]["method"] != "logOut":
             await self.login()
 
         self.__generate_request_id()
@@ -288,6 +288,19 @@ class SagemcomClient:
         else:
             raise UnauthorizedException(data)
 
+    async def logout(self):
+        """Log out of the Sagemcom F@st device."""
+        actions = {
+            "id": 0,
+            "method": "logOut"
+        }
+
+        await self.__api_request_async([actions], False)
+
+        self._session_id = -1
+        self._server_nonce = ""
+        self._request_id = -1
+
     async def get_value_by_xpath(
         self, xpath: str, options: Optional[Dict] = {}
     ) -> Dict:
@@ -328,7 +341,6 @@ class SagemcomClient:
         }
 
         response = await self.__api_request_async([actions], False)
-        print(response)
 
         return response
 
@@ -340,6 +352,7 @@ class SagemcomClient:
         except UnknownPathException:
             device_info = DeviceInfo()
             device_info.mac_address = await self.get_value_by_xpath("Device/DeviceInfo/MACAddress")
+            device_info.manufacturer = "Sagemcom"
             device_info.model_name = await self.get_value_by_xpath("Device/DeviceInfo/ModelNumber")
             device_info.model_number = await self.get_value_by_xpath("Device/DeviceInfo/ProductClass")
             device_info.product_class = await self.get_value_by_xpath("Device/DeviceInfo/ProductClass")
