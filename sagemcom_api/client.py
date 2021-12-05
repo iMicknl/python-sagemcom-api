@@ -294,7 +294,12 @@ class SagemcomClient:
             "id": 0,
             "method": "logOut"
         }
+
         await self.__api_request_async([actions], False)
+
+        self._session_id = -1
+        self._server_nonce = ""
+        self._request_id = -1
 
     async def get_value_by_xpath(
         self, xpath: str, options: Optional[Dict] = {}
@@ -336,7 +341,6 @@ class SagemcomClient:
         }
 
         response = await self.__api_request_async([actions], False)
-        print(response)
 
         return response
 
