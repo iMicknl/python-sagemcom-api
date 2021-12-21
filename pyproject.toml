@@ -23,7 +23,7 @@ pyhumps = ">=1.6.1,<4.0.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "^6.2"
-pre-commit = "^2.15.0"
+pre-commit = "^2.16.0"
 black = "^21.12b0"
 pylint = "^2.12.2"
 isort = "^5.10.1"
