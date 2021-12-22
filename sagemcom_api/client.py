@@ -284,10 +284,7 @@ class SagemcomClient:
 
     async def logout(self):
         """Log out of the Sagemcom F@st device."""
-        actions = {
-            "id": 0,
-            "method": "logOut"
-        }
+        actions = {"id": 0, "method": "logOut"}
 
         await self.__api_request_async([actions], False)
 
@@ -316,21 +313,22 @@ class SagemcomClient:
 
         return data
 
-    async def get_values_by_xpaths(
-        self, xpaths, options: Optional[Dict] = {}
-    ) -> Dict:
+    async def get_values_by_xpaths(self, xpaths, options: Optional[Dict] = {}) -> Dict:
         """
         Retrieve raw values from router using XPath.
 
         :param xpaths: Dict of key to xpath expression
         :param options: optional options
         """
-        actions = [{
-            "id": i,
-            "method": "getValue",
-            "xpath": urllib.parse.quote(xpath),
-            "options": options,
-        } for i, xpath in enumerate(xpaths.values())]
+        actions = [
+            {
+                "id": i,
+                "method": "getValue",
+                "xpath": urllib.parse.quote(xpath),
+                "options": options,
+            }
+            for i, xpath in enumerate(xpaths.values())
+        ]
         print(actions)
 
         response = await self.__api_request_async(actions, False)
@@ -370,15 +368,17 @@ class SagemcomClient:
             data = await self.get_value_by_xpath("Device/DeviceInfo")
 
         except UnknownPathException:
-            data = await self.get_values_by_xpaths({
-                "mac_address": "Device/DeviceInfo/MACAddress",
-                "model_name": "Device/DeviceInfo/ModelNumber",
-                "model_number": "Device/DeviceInfo/ProductClass",
-                "product_class": "Device/DeviceInfo/ProductClass",
-                "serial_number": "Device/DeviceInfo/SerialNumber",
-                "software_version": "Device/DeviceInfo/SoftwareVersion"
-            })
-            data['manufacturer'] = "Sagemcom"
+            data = await self.get_values_by_xpaths(
+                {
+                    "mac_address": "Device/DeviceInfo/MACAddress",
+                    "model_name": "Device/DeviceInfo/ModelNumber",
+                    "model_number": "Device/DeviceInfo/ProductClass",
+                    "product_class": "Device/DeviceInfo/ProductClass",
+                    "serial_number": "Device/DeviceInfo/SerialNumber",
+                    "software_version": "Device/DeviceInfo/SoftwareVersion",
+                }
+            )
+            data["manufacturer"] = "Sagemcom"
 
         return DeviceInfo(**data)
 
