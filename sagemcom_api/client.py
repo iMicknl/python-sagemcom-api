@@ -286,10 +286,7 @@ class SagemcomClient:
 
     async def logout(self):
         """Log out of the Sagemcom F@st device."""
-        actions = {
-            "id": 0,
-            "method": "logOut"
-        }
+        actions = {"id": 0, "method": "logOut"}
 
         await self.__api_request_async([actions], False)
 
