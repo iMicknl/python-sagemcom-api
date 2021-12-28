@@ -329,14 +329,10 @@ class SagemcomClient:
             }
             for i, xpath in enumerate(xpaths.values())
         ]
-        print(actions)
 
         response = await self.__api_request_async(actions, False)
-        print(f"response => {response}")
         values = [self.__get_response_value(response, i) for i in range(len(xpaths))]
-        print(f"values => {values}")
         data = dict(zip(xpaths.keys(), values))
-        print(f"data => {data}")
 
         return data
 
