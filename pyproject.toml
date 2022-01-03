@@ -29,7 +29,7 @@ pylint = "^2.12.2"
 isort = "^5.10.1"
 mypy = "^0.930"
 flake8 = "^4.0.1"
-pyupgrade = "^2.29.1"
+pyupgrade = "^2.31.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
