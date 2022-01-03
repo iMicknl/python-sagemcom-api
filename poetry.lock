@@ -397,7 +397,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "pyhumps"
-version = "3.0.2"
+version = "3.5.0"
 description = "🐫  Convert strings (and dictionary keys) between snake case, camel case and pascal case in Python. Inspired by Humps for Node"
 category = "main"
 optional = false
@@ -932,8 +932,8 @@ pyflakes = [
     {file = "pyflakes-2.4.0.tar.gz", hash = "sha256:05a85c2872edf37a4ed30b0cce2f6093e1d0581f8c19d7393122da7e25b2b24c"},
 ]
 pyhumps = [
-    {file = "pyhumps-3.0.2-py3-none-any.whl", hash = "sha256:367b1aadcaa64f8196a3cd14f56559a5602950aeb8486f49318e7394f5e18052"},
-    {file = "pyhumps-3.0.2.tar.gz", hash = "sha256:042b4b6eec6c1f862f8310c0eebbae19293e9edab8cafb030ff78c890ef1aa34"},
+    {file = "pyhumps-3.5.0-py3-none-any.whl", hash = "sha256:2433eef13d1c258227a0bd5de9660ba17dd6a307e1255d2d20ec9287f8626d96"},
+    {file = "pyhumps-3.5.0.tar.gz", hash = "sha256:55e37f16846eaab26057200924cbdadd2152bf0a5d49175a42358464fa881c73"},
 ]
 pylint = [
     {file = "pylint-2.12.2-py3-none-any.whl", hash = "sha256:daabda3f7ed9d1c60f52d563b1b854632fd90035bcf01443e234d3dc794e3b74"},
