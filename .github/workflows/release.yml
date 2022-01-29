@@ -10,6 +10,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
@@ -17,7 +18,7 @@ jobs:
         with:
           python-version: '3.x'
       - name: Set up Poetry
-        uses: Gr1N/setup-poetry@v4
+        uses: Gr1N/setup-poetry@v7
       - name: Bump Poetry version
         run: |
           tag=${{ github.event.release.tag_name }}

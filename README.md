@@ -2,7 +2,7 @@
 
 (Unofficial) async Python client to interact with Sagemcom F@st routers via internal API's. This client offers helper functions to retrieve common used functions, but also offers functionality to do custom requests via XPATH notation.
 
-Python 3.7+ required.
+Python 3.9+ required.
 
 ## Features
 
