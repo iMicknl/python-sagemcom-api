@@ -150,9 +150,7 @@ class SagemcomClient:
     def __get_response(self, response, index=0):
         """Retrieve response from result."""
         try:
-            value = response["reply"]["actions"][index]["callbacks"][index][
-                "parameters"
-            ]
+            value = response["reply"]["actions"][index]["callbacks"][0]["parameters"]
         except KeyError:
             value = None
 
@@ -315,6 +313,29 @@ class SagemcomClient:
 
         return data
 
+    async def get_values_by_xpaths(self, xpaths, options: Optional[Dict] = {}) -> Dict:
+        """
+        Retrieve raw values from router using XPath.
+
+        :param xpaths: Dict of key to xpath expression
+        :param options: optional options
+        """
+        actions = [
+            {
+                "id": i,
+                "method": "getValue",
+                "xpath": urllib.parse.quote(xpath),
+                "options": options,
+            }
+            for i, xpath in enumerate(xpaths.values())
+        ]
+
+        response = await self.__api_request_async(actions, False)
+        values = [self.__get_response_value(response, i) for i in range(len(xpaths))]
+        data = dict(zip(xpaths.keys(), values))
+
+        return data
+
     async def set_value_by_xpath(
         self, xpath: str, value: str, options: Optional[Dict] = {}
     ) -> Dict:
@@ -341,29 +362,20 @@ class SagemcomClient:
         """Retrieve information about Sagemcom F@st device."""
         try:
             data = await self.get_value_by_xpath("Device/DeviceInfo")
-            return DeviceInfo(**data.get("device_info"))
         except UnknownPathException:
-            device_info = DeviceInfo()
-            device_info.mac_address = await self.get_value_by_xpath(
-                "Device/DeviceInfo/MACAddress"
+            data = await self.get_values_by_xpaths(
+                {
+                    "mac_address": "Device/DeviceInfo/MACAddress",
+                    "model_name": "Device/DeviceInfo/ModelNumber",
+                    "model_number": "Device/DeviceInfo/ProductClass",
+                    "product_class": "Device/DeviceInfo/ProductClass",
+                    "serial_number": "Device/DeviceInfo/SerialNumber",
+                    "software_version": "Device/DeviceInfo/SoftwareVersion",
+                }
             )
-            device_info.manufacturer = "Sagemcom"
-            device_info.model_name = await self.get_value_by_xpath(
-                "Device/DeviceInfo/ModelNumber"
-            )
-            device_info.model_number = await self.get_value_by_xpath(
-                "Device/DeviceInfo/ProductClass"
-            )
-            device_info.product_class = await self.get_value_by_xpath(
-                "Device/DeviceInfo/ProductClass"
-            )
-            device_info.serial_number = await self.get_value_by_xpath(
-                "Device/DeviceInfo/SerialNumber"
-            )
-            device_info.software_version = await self.get_value_by_xpath(
-                "Device/DeviceInfo/SoftwareVersion"
-            )
-            return device_info
+            data["manufacturer"] = "Sagemcom"
+
+        return DeviceInfo(**data)
 
     async def get_hosts(self, only_active: Optional[bool] = False) -> List[Device]:
         """Retrieve hosts connected to Sagemcom F@st device."""
