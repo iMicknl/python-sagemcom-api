@@ -362,6 +362,7 @@ class SagemcomClient:
         """Retrieve information about Sagemcom F@st device."""
         try:
             data = await self.get_value_by_xpath("Device/DeviceInfo")
+            return DeviceInfo(**data.get("device_info"))
         except UnknownPathException:
             data = await self.get_values_by_xpaths(
                 {
