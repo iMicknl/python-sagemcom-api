@@ -24,13 +24,13 @@ jobs:
         uses: Gr1N/setup-poetry@v7
 
       - name: Cache venv
-        uses: actions/cache@v2.1.7
+        uses: actions/cache@v3
         with:
           path: .venv
           key: venv-${{ hashFiles('**/poetry.lock') }}
 
       - name: Cache pre-commit
-        uses: actions/cache@v2.1.7
+        uses: actions/cache@v3
         with:
           path: ~/.cache/pre-commit/
           key: ${{ runner.os }}-pre-commit-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('**/.pre-commit-config.yaml') }} # yamllint disable-line
