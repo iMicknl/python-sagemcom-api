@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: '3.x'
       - name: Set up Poetry
-        uses: Gr1N/setup-poetry@v7
+        uses: Gr1N/setup-poetry@v8
       - name: Build and publish to PyPi
         env:
           POETRY_PYPI_TOKEN_TESTPYPI: ${{ secrets.TEST_PYPI_API_TOKEN }}
