@@ -27,6 +27,7 @@ The Sagemcom F@st series is used by multiple cable companies, where some cable c
 | SagemCom F@st 5366SD  | Eir F3000            | md5                   |                               |
 | Sagemcom F@st 5370e   | Telia                | sha512                |                               |
 | Sagemcom F@st 5566    | Bell (Home Hub 3000) | md5                   | username: guest, password: "" |
+| Sagemcom F@st 5689    | Bell (Home Hub 4000) | md5                   | username: admin, password: "" |
 | Sagemcom F@st 5655V2  | MásMóvil             | md5                   |                               |
 | Sagemcom F@st 5657IL  |                      | md5                   |                               |
 | Speedport Pro         | Telekom              | md5                   | username: admin               |
