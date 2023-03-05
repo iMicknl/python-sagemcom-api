@@ -55,6 +55,7 @@ class SagemcomClient:
         session: ClientSession = None,
         ssl=False,
         verify_ssl=True,
+        keep_keys=False,
     ):
         """
         Create a SagemCom client.
@@ -69,6 +70,7 @@ class SagemcomClient:
         self.username = username
         self.authentication_method = authentication_method
         self._password_hash = self.__generate_hash(password)
+        self.keep_keys = keep_keys
 
         self.protocol = "https" if ssl else "http"
 
@@ -164,7 +166,8 @@ class SagemcomClient:
             value = None
 
         # Rewrite result to snake_case
-        value = humps.decamelize(value)
+        if not self.keep_keys:
+            value = humps.decamelize(value)
 
         return value
 
