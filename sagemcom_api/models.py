@@ -2,6 +2,7 @@
 
 import dataclasses
 from dataclasses import dataclass
+import time
 from typing import Any, List, Optional
 
 
@@ -162,3 +163,30 @@ class PortMapping:
     def id(self):
         """Return unique ID for port mapping."""
         return self.uid
+
+
+@dataclass
+class SpeedTestResult:
+    """Representation of a speedtest result."""
+
+    timestamp: str
+    selected_server_address: str
+    block_traffic: bool
+    latency: str
+    upload: str
+    download: str
+
+    def __post_init__(self):
+        """Process data after init."""
+        # Convert timestamp to datetime object.
+        self.timestamp = time.strftime(
+            "%Y-%m-%d %H:%M:%S", time.localtime(self.timestamp)
+        )
+        self.block_traffic = bool(self.block_traffic)
+
+    def __str__(self) -> str:
+        """Return string representation of speedtest result."""
+        return (
+            f"timestamp: {self.timestamp}, latency: {self.latency}, "
+            f"upload: {self.upload}, download: {self.download}"
+        )
