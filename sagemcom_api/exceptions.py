@@ -20,6 +20,12 @@ class LoginTimeoutException(Exception):
     pass
 
 
+class LoginConnectionException(Exception):
+    """Raised when a connection error is encountered during login."""
+
+    pass
+
+
 class NonWritableParameterException(Exception):
     """Raised when provided parameter is not writable."""
 
