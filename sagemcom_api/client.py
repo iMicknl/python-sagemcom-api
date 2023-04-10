@@ -399,6 +399,25 @@ class SagemcomClient:
 
         return port_mappings
 
+    async def get_logs(self) -> List[str]:
+        """
+        Retrieve system logs.
+        """
+
+        actions = {
+            "id": 0,
+            "method": "getVendorLogDownloadURI",
+            "xpath": urllib.parse.quote("Device/DeviceInfo/VendorLogFiles/VendorLogFile[@uid='1']"),
+        }
+
+        response = await self.__api_request_async([actions], False)
+        log_path = response["reply"]["actions"][0]["callbacks"][0]["parameters"]["uri"]
+
+        log_uri = f"{self.protocol}://{self.host}{log_path}"
+        response = await self.session.get(log_uri, timeout=10)
+
+        return await response.text()
+
     async def reboot(self):
         """Reboot Sagemcom F@st device."""
         action = {
