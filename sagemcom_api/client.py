@@ -55,6 +55,7 @@ class SagemcomClient:
         session: ClientSession = None,
         ssl=False,
         verify_ssl=True,
+        keep_keys=False,
     ):
         """
         Create a SagemCom client.
@@ -69,6 +70,7 @@ class SagemcomClient:
         self.username = username
         self.authentication_method = authentication_method
         self._password_hash = self.__generate_hash(password)
+        self.keep_keys = keep_keys
 
         self.protocol = "https" if ssl else "http"
 
@@ -156,7 +158,7 @@ class SagemcomClient:
 
         return value
 
-    def __get_response_value(self, response, index=0):
+    def __get_response_value(self, response, index=0, keep_keys = None):
         """Retrieve response value from value."""
         try:
             value = self.__get_response(response, index)["value"]
@@ -164,7 +166,8 @@ class SagemcomClient:
             value = None
 
         # Rewrite result to snake_case
-        value = humps.decamelize(value)
+        if (keep_keys is not None and not keep_keys) or (keep_keys is None and not self.keep_keys):
+            value = humps.decamelize(value)
 
         return value
 
@@ -293,7 +296,7 @@ class SagemcomClient:
         self._request_id = -1
 
     async def get_value_by_xpath(
-        self, xpath: str, options: Optional[Dict] = {}
+        self, xpath: str, options: Optional[Dict] = {}, keep_keys = None
     ) -> Dict:
         """
         Retrieve raw value from router using XPath.
@@ -309,11 +312,11 @@ class SagemcomClient:
         }
 
         response = await self.__api_request_async([actions], False)
-        data = self.__get_response_value(response)
+        data = self.__get_response_value(response, keep_keys = keep_keys)
 
         return data
 
-    async def get_values_by_xpaths(self, xpaths, options: Optional[Dict] = {}) -> Dict:
+    async def get_values_by_xpaths(self, xpaths, options: Optional[Dict] = {}, keep_keys = None) -> Dict:
         """
         Retrieve raw values from router using XPath.
 
@@ -331,7 +334,7 @@ class SagemcomClient:
         ]
 
         response = await self.__api_request_async(actions, False)
-        values = [self.__get_response_value(response, i) for i in range(len(xpaths))]
+        values = [self.__get_response_value(response, i, keep_keys = keep_keys) for i in range(len(xpaths))]
         data = dict(zip(xpaths.keys(), values))
 
         return data
@@ -349,7 +352,7 @@ class SagemcomClient:
         actions = {
             "id": 0,
             "method": "setValue",
-            "xpath": xpath,
+            "xpath": urllib.parse.quote(xpath),
             "parameters": {"value": str(value)},
             "options": options,
         }
@@ -361,7 +364,7 @@ class SagemcomClient:
     async def get_device_info(self) -> DeviceInfo:
         """Retrieve information about Sagemcom F@st device."""
         try:
-            data = await self.get_value_by_xpath("Device/DeviceInfo")
+            data = await self.get_value_by_xpath("Device/DeviceInfo", keep_keys = False)
             return DeviceInfo(**data.get("device_info"))
         except UnknownPathException:
             data = await self.get_values_by_xpaths(
@@ -380,7 +383,7 @@ class SagemcomClient:
 
     async def get_hosts(self, only_active: Optional[bool] = False) -> List[Device]:
         """Retrieve hosts connected to Sagemcom F@st device."""
-        data = await self.get_value_by_xpath("Device/Hosts/Hosts")
+        data = await self.get_value_by_xpath("Device/Hosts/Hosts", keep_keys = False)
         devices = [Device(**d) for d in data]
 
         if only_active:
@@ -391,7 +394,7 @@ class SagemcomClient:
 
     async def get_port_mappings(self) -> List[PortMapping]:
         """Retrieve configured Port Mappings on Sagemcom F@st device."""
-        data = await self.get_value_by_xpath("Device/NAT/PortMappings")
+        data = await self.get_value_by_xpath("Device/NAT/PortMappings", keep_keys = False)
         port_mappings = [PortMapping(**p) for p in data]
 
         return port_mappings
@@ -405,6 +408,6 @@ class SagemcomClient:
         }
 
         response = await self.__api_request_async([action], False)
-        data = self.__get_response_value(response)
+        data = self.__get_response_value(response, keep_keys = False)
 
         return data
