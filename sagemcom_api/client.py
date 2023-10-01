@@ -349,7 +349,7 @@ class SagemcomClient:
         actions = {
             "id": 0,
             "method": "setValue",
-            "xpath": xpath,
+            "xpath": urllib.parse.quote(xpath),
             "parameters": {"value": str(value)},
             "options": options,
         }
