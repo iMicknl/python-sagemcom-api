@@ -10,7 +10,7 @@ from types import TracebackType
 from typing import Dict, List, Optional, Type
 import urllib.parse
 
-from aiohttp import ClientSession, ClientTimeout
+from aiohttp import ClientConnectionError, ClientSession, ClientTimeout
 from aiohttp.connector import TCPConnector
 import humps
 
@@ -33,6 +33,7 @@ from .exceptions import (
     AccessRestrictionException,
     AuthenticationException,
     BadRequestException,
+    LoginConnectionException,
     LoginTimeoutException,
     MaximumSessionCountException,
     NonWritableParameterException,
@@ -271,6 +272,10 @@ class SagemcomClient:
         except asyncio.TimeoutError as exception:
             raise LoginTimeoutException(
                 "Request timed-out. This is mainly due to using the wrong encryption method."
+            ) from exception
+        except ClientConnectionError as exception:
+            raise LoginConnectionException(
+                "Unable to connect to the device. Please check the host address."
             ) from exception
 
         data = self.__get_response(response)
