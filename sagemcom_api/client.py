@@ -41,7 +41,7 @@ from .exceptions import (
     UnknownException,
     UnknownPathException,
 )
-from .models import Device, DeviceInfo, PortMapping
+from .models import Device, DeviceInfo, PortMapping, SpeedTestResult
 
 
 class SagemcomClient:
@@ -172,7 +172,7 @@ class SagemcomClient:
 
         return value
 
-    async def __api_request_async(self, actions, priority=False):
+    async def __api_request_async(self, actions, priority=False, **request_kwargs):
         """Build request to the internal JSON-req API."""
         self.__generate_request_id()
         self.__generate_nonce()
@@ -192,7 +192,9 @@ class SagemcomClient:
         }
 
         async with self.session.post(
-            api_host, data="req=" + json.dumps(payload, separators=(",", ":"))
+            api_host,
+            data="req=" + json.dumps(payload, separators=(",", ":")),
+            **request_kwargs,
         ) as response:
 
             if response.status == 400:
@@ -435,3 +437,35 @@ class SagemcomClient:
         data = self.__get_response_value(response, keep_keys = False)
 
         return data
+
+    async def run_speed_test(self, block_traffic: bool = False):
+        """Run Speed Test on Sagemcom F@st device."""
+        actions = [
+            {
+                "id": 0,
+                "method": "speedTestClient",
+                "xpath": "Device/IP/Diagnostics/SpeedTest",
+                "parameters": {"BlockTraffic": block_traffic},
+            }
+        ]
+        return await self.__api_request_async(actions, False, timeout=100)
+
+    async def get_speed_test_results(self):
+        """Retrieve Speed Test results from Sagemcom F@st device."""
+        ret = await self.get_value_by_xpath("Device/IP/Diagnostics/SpeedTest")
+        history = ret["speed_test"]["history"]
+        if history:
+            timestamps = (int(k) for k in history["timestamp"].split(","))
+            server_address = history["selected_server_address"].split(",")
+            block_traffic = history["block_traffic"].split(",")
+            latency = history["latency"].split(",")
+            upload = (float(k) for k in history["upload"].split(","))
+            download = (float(k) for k in history["download"].split(","))
+            results = [
+                SpeedTestResult(*data)
+                for data in zip(
+                    timestamps, server_address, block_traffic, latency, upload, download
+                )
+            ]
+            return results
+        return []
