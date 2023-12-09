@@ -14,6 +14,7 @@ charset-normalizer = ">=2.0,<3.0"
 frozenlist = ">=1.1.1"
 multidict = ">=4.5,<7.0"
 yarl = ">=1.0,<2.0"
+requests = ">2.0"
 
 [package.extras]
 speedups = ["aiodns", "brotli", "cchardet"]
@@ -425,7 +426,7 @@ py = ">=1.8.2"
 tomli = ">=1.0.0"
 
 [package.extras]
-testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "pygments (>=2.7.2)", "requests", "xmlschema"]
+testing = ["argcomplete", "hypothesis (>=3.56)", "mock", "nose", "pygments (>=2.7.2)", "xmlschema"]
 
 [[package]]
 name = "pyupgrade"
