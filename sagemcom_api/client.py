@@ -325,10 +325,10 @@ class SagemcomClient:
 
                 await self.login()
                 return encryption_method
-            except LoginTimeoutException:
+            except (LoginTimeoutException, AuthenticationException):
                 pass
 
-        raise LoginTimeoutException
+        return None
 
     async def get_value_by_xpath(self, xpath: str, options: dict | None = None) -> dict:
         """
