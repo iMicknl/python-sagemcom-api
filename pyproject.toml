@@ -27,7 +27,7 @@ pre-commit = "^2.16.0"
 black = "^22.1"
 pylint = "^2.13.2"
 isort = "^5.10.1"
-mypy = "^0.942"
+mypy = "^1.8"
 flake8 = "^4.0.1"
 pyupgrade = "^2.31.1"
 
