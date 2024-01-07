@@ -4,6 +4,7 @@ import dataclasses
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
+
 # pylint: disable=too-many-instance-attributes
 @dataclass
 class Device:
@@ -66,6 +67,7 @@ class Device:
         """Return name of the device."""
         return self.user_host_name or self.host_name
 
+
 # pylint: disable=too-many-instance-attributes
 @dataclass
 class DeviceInfo:
@@ -100,11 +102,11 @@ class DeviceInfo:
     reboot_status: Optional[float] = None
     reset_status: Optional[float] = None
     update_status: Optional[float] = None
-    SNMP: Optional[bool] = None # pylint: disable=invalid-name
+    SNMP: Optional[bool] = None  # pylint: disable=invalid-name
     first_connection: Optional[bool] = None
     build_date: Optional[str] = None
     spec_version: Optional[str] = None
-    CLID: Optional[str] = None # pylint: disable=invalid-name
+    CLID: Optional[str] = None  # pylint: disable=invalid-name
     flush_device_log: Optional[bool] = None
     locations: Optional[str] = None
     api_version: Optional[str] = None

@@ -40,6 +40,7 @@ from .exceptions import (
 )
 from .models import Device, DeviceInfo, PortMapping
 
+
 # pylint: disable=too-many-instance-attributes
 class SagemcomClient:
     """Client to communicate with the Sagemcom API."""
@@ -54,7 +55,7 @@ class SagemcomClient:
         password: str,
         authentication_method: EncryptionMethod,
         session: ClientSession | None = None,
-        ssl: bool | None  = False,
+        ssl: bool | None = False,
         verify_ssl: bool | None = True,
     ):
         """
@@ -292,9 +293,7 @@ class SagemcomClient:
         self._server_nonce = ""
         self._request_id = -1
 
-    async def get_value_by_xpath(
-        self, xpath: str, options: dict | None = None
-    ) -> dict:
+    async def get_value_by_xpath(self, xpath: str, options: dict | None = None) -> dict:
         """
         Retrieve raw value from router using XPath.
 
