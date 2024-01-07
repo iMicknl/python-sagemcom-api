@@ -60,7 +60,7 @@ class SagemcomClient:
         host: str,
         username: str,
         password: str,
-        authentication_method: EncryptionMethod,
+        authentication_method: EncryptionMethod | None = None,
         session: ClientSession | None = None,
         ssl: bool | None = False,
         verify_ssl: bool | None = True,
@@ -329,7 +329,7 @@ class SagemcomClient:
                 pass
 
         raise LoginTimeoutException
-    
+
     async def get_value_by_xpath(self, xpath: str, options: dict | None = None) -> dict:
         """
         Retrieve raw value from router using XPath.
