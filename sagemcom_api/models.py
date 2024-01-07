@@ -4,7 +4,7 @@ import dataclasses
 from dataclasses import dataclass
 from typing import Any, List, Optional
 
-
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class Device:
     """Device connected to a router."""
@@ -51,9 +51,9 @@ class Device:
     def __init__(self, **kwargs):
         """Override to accept more args than specified."""
         names = {f.name for f in dataclasses.fields(self)}
-        for k, v in kwargs.items():
-            if k in names:
-                setattr(self, k, v)
+        for key, value in kwargs.items():
+            if key in names:
+                setattr(self, key, value)
 
     @property
     def id(self):
@@ -65,7 +65,7 @@ class Device:
         """Return name of the device."""
         return self.user_host_name or self.host_name
 
-
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class DeviceInfo:
     """Sagemcom Router representation."""
@@ -112,9 +112,9 @@ class DeviceInfo:
     def __init__(self, **kwargs):
         """Override to accept more args than specified."""
         names = {f.name for f in dataclasses.fields(self)}
-        for k, v in kwargs.items():
-            if k in names:
-                setattr(self, k, v)
+        for key, value in kwargs.items():
+            if key in names:
+                setattr(self, key, value)
 
     @property
     def id(self):
@@ -122,6 +122,7 @@ class DeviceInfo:
         return self.mac_address
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class PortMapping:
     """Port Mapping representation."""
@@ -150,9 +151,9 @@ class PortMapping:
     def __init__(self, **kwargs):
         """Override to accept more args than specified."""
         names = {f.name for f in dataclasses.fields(self)}
-        for k, v in kwargs.items():
-            if k in names:
-                setattr(self, k, v)
+        for key, value in kwargs.items():
+            if key in names:
+                setattr(self, key, value)
 
     @property
     def id(self):

@@ -7,7 +7,6 @@ import json
 import math
 import random
 from types import TracebackType
-from typing import Dict, List, Optional, Type
 import urllib.parse
 
 from aiohttp import ClientSession, ClientTimeout
@@ -42,9 +41,11 @@ from .exceptions import (
 )
 from .models import Device, DeviceInfo, PortMapping
 
-
+# pylint: disable=too-many-instance-attributes
 class SagemcomClient:
     """Client to communicate with the Sagemcom API."""
+
+    _auth_key: str | None
 
     def __init__(
         self,
@@ -277,8 +278,8 @@ class SagemcomClient:
             self._session_id = data["id"]
             self._server_nonce = data["nonce"]
             return True
-        else:
-            raise UnauthorizedException(data)
+
+        raise UnauthorizedException(data)
 
     async def logout(self):
         """Log out of the Sagemcom F@st device."""
@@ -291,7 +292,7 @@ class SagemcomClient:
         self._request_id = -1
 
     async def get_value_by_xpath(
-        self, xpath: str, options: dict | None = {}
+        self, xpath: str, options: dict | None = None
     ) -> dict:
         """
         Retrieve raw value from router using XPath.
@@ -303,7 +304,7 @@ class SagemcomClient:
             "id": 0,
             "method": "getValue",
             "xpath": urllib.parse.quote(xpath),
-            "options": options,
+            "options": options | {},
         }
 
         response = await self.__api_request_async([actions], False)
@@ -311,7 +312,7 @@ class SagemcomClient:
 
         return data
 
-    async def get_values_by_xpaths(self, xpaths, options: dict | None = {}) -> dict:
+    async def get_values_by_xpaths(self, xpaths, options: dict | None = None) -> dict:
         """
         Retrieve raw values from router using XPath.
 
@@ -323,7 +324,7 @@ class SagemcomClient:
                 "id": i,
                 "method": "getValue",
                 "xpath": urllib.parse.quote(xpath),
-                "options": options,
+                "options": options | {},
             }
             for i, xpath in enumerate(xpaths.values())
         ]
@@ -335,7 +336,7 @@ class SagemcomClient:
         return data
 
     async def set_value_by_xpath(
-        self, xpath: str, value: str, options: dict | None = {}
+        self, xpath: str, value: str, options: dict | None = None
     ) -> dict:
         """
         Retrieve raw value from router using XPath.
@@ -349,7 +350,7 @@ class SagemcomClient:
             "method": "setValue",
             "xpath": urllib.parse.quote(xpath),
             "parameters": {"value": str(value)},
-            "options": options,
+            "options": options | None,
         }
 
         response = await self.__api_request_async([actions], False)
