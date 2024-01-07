@@ -13,6 +13,9 @@ categories:
     label: 'documentation'
   - title: '🐛 Bug Fixes'
     label: 'bug'
+  - title: '📦 Dependencies'
+    label: 'dependencies'
+
 template: |
   ## What's changed
   $CHANGES
