@@ -25,6 +25,7 @@ The Sagemcom F@st series is used by multiple cable companies, where some cable c
 | Sagemcom F@st 4353    | Belong Gateway       | md5                   | username: admin, password: "" |
 | Sagemcom F@st 5250    | Bell (Home Hub 2000) | md5                   | username: guest, password: "" |
 | Sagemcom F@st 5280    |                      | sha512                |                               |
+| Sagemcom F@st 5359    | KPN (Box 12)         | sha512                | username: admin               |
 | Sagemcom F@st 5364    | BT (Smart Hub)       | md5                   | username: guest, password: "" |
 | SagemCom F@st 5366SD  | Eir F3000            | md5                   |                               |
 | Sagemcom F@st 5370e   | Telia                | sha512                |                               |
