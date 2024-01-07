@@ -77,9 +77,6 @@ class DeviceInfo:
     model_number: Optional[Any] = None
     software_version: Optional[str] = None
     hardware_version: Optional[str] = None
-    up_time: Optional[Any] = None
-    reboot_count: Optional[Any] = None
-    router_name: Optional[Any] = None
     bootloader_version: Optional[Any] = None
     device_category: Optional[Any] = None
     manufacturer_oui: Optional[Any] = None
@@ -94,7 +91,6 @@ class DeviceInfo:
     provisioning_code: Optional[str] = None
     up_time: Optional[int] = None
     first_use_date: Optional[str] = None
-    mac_address: Optional[str] = None
     mode: Optional[str] = None
     country: Optional[str] = None
     reboot_count: Optional[int] = None
