@@ -13,7 +13,6 @@ from aiohttp import ClientSession, ClientTimeout
 from aiohttp.connector import TCPConnector
 import humps
 
-from . import __version__
 from .const import (
     API_ENDPOINT,
     DEFAULT_TIMEOUT,
@@ -82,9 +81,9 @@ class SagemcomClient:
             session
             if session
             else ClientSession(
-                headers={"User-Agent": f"{DEFAULT_USER_AGENT}/{__version__}"},
+                headers={"User-Agent": f"{DEFAULT_USER_AGENT}"},
                 timeout=ClientTimeout(DEFAULT_TIMEOUT),
-                connector=TCPConnector(ssl=verify_ssl),
+                connector=TCPConnector(verify_ssl=verify_ssl if verify_ssl else True),
             )
         )
 
@@ -304,7 +303,7 @@ class SagemcomClient:
             "id": 0,
             "method": "getValue",
             "xpath": urllib.parse.quote(xpath),
-            "options": options | {},
+            "options": options if options else {},
         }
 
         response = await self.__api_request_async([actions], False)
@@ -324,7 +323,7 @@ class SagemcomClient:
                 "id": i,
                 "method": "getValue",
                 "xpath": urllib.parse.quote(xpath),
-                "options": options | {},
+                "options": options if options else {},
             }
             for i, xpath in enumerate(xpaths.values())
         ]
@@ -350,7 +349,7 @@ class SagemcomClient:
             "method": "setValue",
             "xpath": urllib.parse.quote(xpath),
             "parameters": {"value": str(value)},
-            "options": options | None,
+            "options": options if options else {},
         }
 
         response = await self.__api_request_async([actions], False)
