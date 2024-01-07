@@ -1,39 +1,42 @@
 repos:
-  - repo: https://github.com/asottile/pyupgrade
-    rev: v2.7.2
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.0.1
     hooks:
-      - id: pyupgrade
-        args: [--py37-plus]
-  - repo: https://github.com/psf/black
-    rev: 20.8b1
+      - id: check-json
+        exclude: .devcontainer
+      - id: check-yaml
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+  - repo: local
     hooks:
       - id: black
-        args:
-          - --safe
-          - --quiet
-        files: ^((sagemcom_api|tests)/.+)?[^/]+\.py$
-  - repo: https://github.com/codespell-project/codespell
-    rev: v1.17.1
-    hooks:
-      - id: codespell
-        args:
-          - --skip="./.*,*.csv,*.json,*.md"
-          - --quiet-level=2
-        exclude_types: [csv, json]
-  - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.4
-    hooks:
+        name: black
+        entry: black
+        language: system
+        types: [ python ]
       - id: flake8
-        args: ['--ignore=E501']
-        additional_dependencies:
-          - flake8-docstrings==1.5.0
-          - pydocstyle==5.1.1
-        files: ^(sagemcom_api|tests)/.+\.py$
-  - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.24.2
-    hooks:
-      - id: yamllint
-  - repo: https://github.com/PyCQA/isort
-    rev: 5.5.3
-    hooks:
+        name: flake8
+        entry: flake8
+        language: system
+        types: [ python ]
       - id: isort
+        name: isort
+        entry: isort
+        language: system
+        types: [ python ]
+      - id: pyupgrade
+        name: pyupgrade
+        entry: pyupgrade
+        args: ["--py37-plus"]
+        language: system
+        types: [ python ]
+      - id: mypy
+        name: mypy
+        entry: mypy
+        language: system
+        types: [ python ]
+      - id: pylint
+        name: pylint
+        entry: pylint
+        language: system
+        types: [ python ]
