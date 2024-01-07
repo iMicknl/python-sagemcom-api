@@ -41,21 +41,21 @@ from .exceptions import (
 )
 from .models import Device, DeviceInfo, PortMapping
 
-# pylint: disable=too-many-instance-attributes
 class SagemcomClient:
     """Client to communicate with the Sagemcom API."""
 
     _auth_key: str | None
 
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
-        host,
-        username,
-        password,
-        authentication_method,
-        session: ClientSession = None,
-        ssl=False,
-        verify_ssl=True,
+        host: str,
+        username: str,
+        password: str,
+        authentication_method: EncryptionMethod,
+        session: ClientSession | None = None,
+        ssl: bool | None  = False,
+        verify_ssl: bool | None = True,
     ):
         """
         Create a SagemCom client.
