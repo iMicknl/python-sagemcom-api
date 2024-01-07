@@ -19,7 +19,7 @@ The Sagemcom F@st series is used by multiple cable companies, where some cable c
 | --------------------- | -------------------- | --------------------- | ----------------------------- |
 | Sagemcom F@st 3864    | Optus                | sha512                | username: guest, password: "" |
 | Sagemcom F@st 3865b   | Proximus (b-box3)    | md5                   |                               |
-| Sagemcom F@st 3890V3  | Delta / Zeelandnet   | md5                   |                               |
+| Sagemcom F@st 3890V3  | Delta / Zeelandnet   | sha512                |                               |
 | Sagemcom F@st 3896    |                      | sha512                | username: admin               |
 | Sagemcom F@st 4360Air | KPN                  | md5                   |                               |
 | Sagemcom F@st 4353    | Belong Gateway       | md5                   | username: admin, password: "" |
@@ -50,13 +50,14 @@ The following script can be used as a quickstart.
 
 ```python
 import asyncio
-from sagemcom_api.enums import EncryptionMethod
 from sagemcom_api.client import SagemcomClient
+from sagemcom_api.enums import EncryptionMethod
+from sagemcom_api.exceptions import NonWritableParameterException
 
 HOST = ""
 USERNAME = ""
 PASSWORD = ""
-ENCRYPTION_METHOD = EncryptionMethod.MD5 # or EncryptionMethod.SHA512
+ENCRYPTION_METHOD = EncryptionMethod.SHA512 # or EncryptionMethod.MD5
 
 async def main() -> None:
     async with SagemcomClient(HOST, USERNAME, PASSWORD, ENCRYPTION_METHOD) as client:
@@ -81,8 +82,13 @@ async def main() -> None:
         custom_command_output = await client.get_value_by_xpath("Device/UserInterface/AdvancedMode")
         print(custom_command_output)
 
-        # Set value via XPath notation
-        custom_command_output = await client.set_value_by_xpath("Device/UserInterface/AdvancedMode", "true")
+        # Set value via XPath notation and catch specific errors
+        try:
+            custom_command_output = await client.set_value_by_xpath("Device/UserInterface/AdvancedMode", "true")
+        except NonWritableParameterException as exception:  # pylint: disable=broad-except
+            print("Not allowed to set AdvancedMode parameter on your device.")
+            return
+
         print(custom_command_output)
 
 asyncio.run(main())

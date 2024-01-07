@@ -189,9 +189,9 @@ class SagemcomClient:
             }
         }
 
-        async with self.session.post(
-            api_host, data="req=" + json.dumps(payload, separators=(",", ":"))
-        ) as response:
+        form_data = {"req": json.dumps(payload, separators=(",", ":"))}
+
+        async with self.session.post(api_host, data=form_data) as response:
             if response.status == 400:
                 result = await response.text()
                 raise BadRequestException(result)
@@ -245,6 +245,7 @@ class SagemcomClient:
     async def login(self):
         """TODO."""
         actions = {
+            "id": 0,
             "method": "logIn",
             "parameters": {
                 "user": self.username,
