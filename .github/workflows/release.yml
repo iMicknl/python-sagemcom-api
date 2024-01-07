@@ -29,7 +29,7 @@ jobs:
         with:
           message: "Bump version to ${{ github.event.release.tag_name }}"
           add: "pyproject.toml"
-          ref: "master"
+          ref: "main"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Build and publish to PyPi
