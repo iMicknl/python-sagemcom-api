@@ -47,6 +47,7 @@ class Device:
     ipv6_addresses: Optional[List] = None
     device_type_association: Optional[Any] = None
 
+    # pylint:disable=fixme
     # TODO Remove extra kwargs before init
     def __init__(self, **kwargs):
         """Override to accept more args than specified."""
@@ -99,15 +100,16 @@ class DeviceInfo:
     reboot_status: Optional[float] = None
     reset_status: Optional[float] = None
     update_status: Optional[float] = None
-    SNMP: Optional[bool] = None
+    SNMP: Optional[bool] = None # pylint: disable=invalid-name
     first_connection: Optional[bool] = None
     build_date: Optional[str] = None
     spec_version: Optional[str] = None
-    CLID: Optional[str] = None
+    CLID: Optional[str] = None # pylint: disable=invalid-name
     flush_device_log: Optional[bool] = None
     locations: Optional[str] = None
     api_version: Optional[str] = None
 
+    # pylint:disable=fixme
     # TODO Remove extra kwargs before init
     def __init__(self, **kwargs):
         """Override to accept more args than specified."""
@@ -147,6 +149,7 @@ class PortMapping:
     target: Optional[str] = None
     lease_start: Optional[str] = None  # Date?
 
+    # pylint:disable=fixme
     # TODO Remove extra kwargs before init
     def __init__(self, **kwargs):
         """Override to accept more args than specified."""

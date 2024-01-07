@@ -40,6 +40,7 @@ from .exceptions import (
 )
 from .models import Device, DeviceInfo, PortMapping
 
+# pylint: disable=too-many-instance-attributes
 class SagemcomClient:
     """Client to communicate with the Sagemcom API."""
 
@@ -211,6 +212,7 @@ class SagemcomClient:
 
                 # Error in one of the actions
                 if error["description"] == XMO_REQUEST_ACTION_ERR:
+                    # pylint:disable=fixme
                     # TODO How to support multiple actions + error handling?
                     actions = result["reply"]["actions"]
                     for action in actions:

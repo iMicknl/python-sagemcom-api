@@ -26,8 +26,7 @@ class MaximumSessionCountException(Exception):
     """Raised when the maximum session count is reached."""
 
 
-# Exceptions provided by this library
-# TODO Validate our own errors
+# Broad exceptions provided by this library
 class BadRequestException(Exception):
     """TODO."""
 
