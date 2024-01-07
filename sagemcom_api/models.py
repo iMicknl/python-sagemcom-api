@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Any, List, Optional
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class Device:
     """Device connected to a router."""
@@ -47,13 +48,14 @@ class Device:
     ipv6_addresses: Optional[List] = None
     device_type_association: Optional[Any] = None
 
+    # pylint:disable=fixme
     # TODO Remove extra kwargs before init
     def __init__(self, **kwargs):
         """Override to accept more args than specified."""
         names = {f.name for f in dataclasses.fields(self)}
-        for k, v in kwargs.items():
-            if k in names:
-                setattr(self, k, v)
+        for key, value in kwargs.items():
+            if key in names:
+                setattr(self, key, value)
 
     @property
     def id(self):
@@ -66,6 +68,7 @@ class Device:
         return self.user_host_name or self.host_name
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class DeviceInfo:
     """Sagemcom Router representation."""
@@ -77,9 +80,6 @@ class DeviceInfo:
     model_number: Optional[Any] = None
     software_version: Optional[str] = None
     hardware_version: Optional[str] = None
-    up_time: Optional[Any] = None
-    reboot_count: Optional[Any] = None
-    router_name: Optional[Any] = None
     bootloader_version: Optional[Any] = None
     device_category: Optional[Any] = None
     manufacturer_oui: Optional[Any] = None
@@ -94,7 +94,6 @@ class DeviceInfo:
     provisioning_code: Optional[str] = None
     up_time: Optional[int] = None
     first_use_date: Optional[str] = None
-    mac_address: Optional[str] = None
     mode: Optional[str] = None
     country: Optional[str] = None
     reboot_count: Optional[int] = None
@@ -103,22 +102,23 @@ class DeviceInfo:
     reboot_status: Optional[float] = None
     reset_status: Optional[float] = None
     update_status: Optional[float] = None
-    SNMP: Optional[bool] = None
+    SNMP: Optional[bool] = None  # pylint: disable=invalid-name
     first_connection: Optional[bool] = None
     build_date: Optional[str] = None
     spec_version: Optional[str] = None
-    CLID: Optional[str] = None
+    CLID: Optional[str] = None  # pylint: disable=invalid-name
     flush_device_log: Optional[bool] = None
     locations: Optional[str] = None
     api_version: Optional[str] = None
 
+    # pylint:disable=fixme
     # TODO Remove extra kwargs before init
     def __init__(self, **kwargs):
         """Override to accept more args than specified."""
         names = {f.name for f in dataclasses.fields(self)}
-        for k, v in kwargs.items():
-            if k in names:
-                setattr(self, k, v)
+        for key, value in kwargs.items():
+            if key in names:
+                setattr(self, key, value)
 
     @property
     def id(self):
@@ -126,6 +126,7 @@ class DeviceInfo:
         return self.mac_address
 
 
+# pylint: disable=too-many-instance-attributes
 @dataclass
 class PortMapping:
     """Port Mapping representation."""
@@ -150,13 +151,14 @@ class PortMapping:
     target: Optional[str] = None
     lease_start: Optional[str] = None  # Date?
 
+    # pylint:disable=fixme
     # TODO Remove extra kwargs before init
     def __init__(self, **kwargs):
         """Override to accept more args than specified."""
         names = {f.name for f in dataclasses.fields(self)}
-        for k, v in kwargs.items():
-            if k in names:
-                setattr(self, k, v)
+        for key, value in kwargs.items():
+            if key in names:
+                setattr(self, key, value)
 
     @property
     def id(self):

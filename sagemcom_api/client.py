@@ -7,14 +7,12 @@ import json
 import math
 import random
 from types import TracebackType
-from typing import Dict, List, Optional, Type
 import urllib.parse
 
 from aiohttp import ClientSession, ClientTimeout
 from aiohttp.connector import TCPConnector
 import humps
 
-from . import __version__
 from .const import (
     API_ENDPOINT,
     DEFAULT_TIMEOUT,
@@ -43,18 +41,22 @@ from .exceptions import (
 from .models import Device, DeviceInfo, PortMapping
 
 
+# pylint: disable=too-many-instance-attributes
 class SagemcomClient:
     """Client to communicate with the Sagemcom API."""
 
+    _auth_key: str | None
+
+    # pylint: disable=too-many-arguments
     def __init__(
         self,
-        host,
-        username,
-        password,
-        authentication_method,
-        session: ClientSession = None,
-        ssl=False,
-        verify_ssl=True,
+        host: str,
+        username: str,
+        password: str,
+        authentication_method: EncryptionMethod,
+        session: ClientSession | None = None,
+        ssl: bool | None = False,
+        verify_ssl: bool | None = True,
     ):
         """
         Create a SagemCom client.
@@ -81,9 +83,9 @@ class SagemcomClient:
             session
             if session
             else ClientSession(
-                headers={"User-Agent": f"{DEFAULT_USER_AGENT}/{__version__}"},
+                headers={"User-Agent": f"{DEFAULT_USER_AGENT}"},
                 timeout=ClientTimeout(DEFAULT_TIMEOUT),
-                connector=TCPConnector(ssl=verify_ssl),
+                connector=TCPConnector(verify_ssl=verify_ssl if verify_ssl else True),
             )
         )
 
@@ -93,9 +95,9 @@ class SagemcomClient:
 
     async def __aexit__(
         self,
-        exc_type: Optional[Type[BaseException]],
-        exc_value: Optional[BaseException],
-        traceback: Optional[TracebackType],
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: TracebackType | None,
     ) -> None:
         """Close session on exit."""
         await self.close()
@@ -190,7 +192,6 @@ class SagemcomClient:
         async with self.session.post(
             api_host, data="req=" + json.dumps(payload, separators=(",", ":"))
         ) as response:
-
             if response.status == 400:
                 result = await response.text()
                 raise BadRequestException(result)
@@ -212,7 +213,7 @@ class SagemcomClient:
 
                 # Error in one of the actions
                 if error["description"] == XMO_REQUEST_ACTION_ERR:
-
+                    # pylint:disable=fixme
                     # TODO How to support multiple actions + error handling?
                     actions = result["reply"]["actions"]
                     for action in actions:
@@ -279,8 +280,8 @@ class SagemcomClient:
             self._session_id = data["id"]
             self._server_nonce = data["nonce"]
             return True
-        else:
-            raise UnauthorizedException(data)
+
+        raise UnauthorizedException(data)
 
     async def logout(self):
         """Log out of the Sagemcom F@st device."""
@@ -292,9 +293,7 @@ class SagemcomClient:
         self._server_nonce = ""
         self._request_id = -1
 
-    async def get_value_by_xpath(
-        self, xpath: str, options: Optional[Dict] = {}
-    ) -> Dict:
+    async def get_value_by_xpath(self, xpath: str, options: dict | None = None) -> dict:
         """
         Retrieve raw value from router using XPath.
 
@@ -305,7 +304,7 @@ class SagemcomClient:
             "id": 0,
             "method": "getValue",
             "xpath": urllib.parse.quote(xpath),
-            "options": options,
+            "options": options if options else {},
         }
 
         response = await self.__api_request_async([actions], False)
@@ -313,7 +312,7 @@ class SagemcomClient:
 
         return data
 
-    async def get_values_by_xpaths(self, xpaths, options: Optional[Dict] = {}) -> Dict:
+    async def get_values_by_xpaths(self, xpaths, options: dict | None = None) -> dict:
         """
         Retrieve raw values from router using XPath.
 
@@ -325,7 +324,7 @@ class SagemcomClient:
                 "id": i,
                 "method": "getValue",
                 "xpath": urllib.parse.quote(xpath),
-                "options": options,
+                "options": options if options else {},
             }
             for i, xpath in enumerate(xpaths.values())
         ]
@@ -337,8 +336,8 @@ class SagemcomClient:
         return data
 
     async def set_value_by_xpath(
-        self, xpath: str, value: str, options: Optional[Dict] = {}
-    ) -> Dict:
+        self, xpath: str, value: str, options: dict | None = None
+    ) -> dict:
         """
         Retrieve raw value from router using XPath.
 
@@ -351,7 +350,7 @@ class SagemcomClient:
             "method": "setValue",
             "xpath": urllib.parse.quote(xpath),
             "parameters": {"value": str(value)},
-            "options": options,
+            "options": options if options else {},
         }
 
         response = await self.__api_request_async([actions], False)
@@ -362,7 +361,7 @@ class SagemcomClient:
         """Retrieve information about Sagemcom F@st device."""
         try:
             data = await self.get_value_by_xpath("Device/DeviceInfo")
-            return DeviceInfo(**data.get("device_info"))
+            return DeviceInfo(**data["device_info"])
         except UnknownPathException:
             data = await self.get_values_by_xpaths(
                 {
@@ -378,7 +377,7 @@ class SagemcomClient:
 
         return DeviceInfo(**data)
 
-    async def get_hosts(self, only_active: Optional[bool] = False) -> List[Device]:
+    async def get_hosts(self, only_active: bool | None = False) -> list[Device]:
         """Retrieve hosts connected to Sagemcom F@st device."""
         data = await self.get_value_by_xpath("Device/Hosts/Hosts")
         devices = [Device(**d) for d in data]
@@ -389,7 +388,7 @@ class SagemcomClient:
 
         return devices
 
-    async def get_port_mappings(self) -> List[PortMapping]:
+    async def get_port_mappings(self) -> list[PortMapping]:
         """Retrieve configured Port Mappings on Sagemcom F@st device."""
         data = await self.get_value_by_xpath("Device/NAT/PortMappings")
         port_mappings = [PortMapping(**p) for p in data]
