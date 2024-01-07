@@ -28,7 +28,7 @@ black = "^23.12"
 pylint = "^2.13.2"
 isort = "^5.10.1"
 mypy = "^1.8"
-flake8 = "^4.0.1"
+flake8 = "^7.0.0"
 pyupgrade = "^2.31.1"
 
 [build-system]
