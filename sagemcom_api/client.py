@@ -17,6 +17,7 @@ from aiohttp import (
     ServerDisconnectedError,
     TCPConnector,
 )
+import backoff
 import humps
 
 from .const import (
@@ -176,55 +177,61 @@ class SagemcomClient:
 
         return value
 
-    async def __process_response(self, response):
-        if response.status == 400:
-            result = await response.text()
-            raise BadRequestException(result)
+    @backoff.on_exception(
+        backoff.expo,
+        (ClientConnectorError, ClientOSError, ServerDisconnectedError),
+        max_tries=5,
+    )
+    async def __post(self, url, data):
+        async with self.session.post(url, data=data) as response:
+            if response.status == 400:
+                result = await response.text()
+                raise BadRequestException(result)
 
-        if response.status != 200:
-            result = await response.text()
-            raise UnknownException(result)
+            if response.status != 200:
+                result = await response.text()
+                raise UnknownException(result)
 
-        result = await response.json()
-        error = self.__get_response_error(result)
+            result = await response.json()
+            error = self.__get_response_error(result)
 
-        # No errors
-        if (
-            error["description"] == XMO_REQUEST_NO_ERR
-            or error["description"] == "Ok"  # NOQA: W503
-        ):
+            # No errors
+            if (
+                error["description"] == XMO_REQUEST_NO_ERR
+                or error["description"] == "Ok"  # NOQA: W503
+            ):
+                return result
+
+            # Error in one of the actions
+            if error["description"] == XMO_REQUEST_ACTION_ERR:
+                # pylint:disable=fixme
+                # TODO How to support multiple actions + error handling?
+                actions = result["reply"]["actions"]
+                for action in actions:
+                    action_error = action["error"]
+                    action_error_desc = action_error["description"]
+
+                    if action_error_desc == XMO_NO_ERR:
+                        continue
+
+                    if action_error_desc == XMO_AUTHENTICATION_ERR:
+                        raise AuthenticationException(action_error)
+
+                    if action_error_desc == XMO_ACCESS_RESTRICTION_ERR:
+                        raise AccessRestrictionException(action_error)
+
+                    if action_error_desc == XMO_NON_WRITABLE_PARAMETER_ERR:
+                        raise NonWritableParameterException(action_error)
+
+                    if action_error_desc == XMO_UNKNOWN_PATH_ERR:
+                        raise UnknownPathException(action_error)
+
+                    if action_error_desc == XMO_MAX_SESSION_COUNT_ERR:
+                        raise MaximumSessionCountException(action_error)
+
+                    raise UnknownException(action_error)
+
             return result
-
-        # Error in one of the actions
-        if error["description"] == XMO_REQUEST_ACTION_ERR:
-            # pylint:disable=fixme
-            # TODO How to support multiple actions + error handling?
-            actions = result["reply"]["actions"]
-            for action in actions:
-                action_error = action["error"]
-                action_error_desc = action_error["description"]
-
-                if action_error_desc == XMO_NO_ERR:
-                    continue
-
-                if action_error_desc == XMO_AUTHENTICATION_ERR:
-                    raise AuthenticationException(action_error)
-
-                if action_error_desc == XMO_ACCESS_RESTRICTION_ERR:
-                    raise AccessRestrictionException(action_error)
-
-                if action_error_desc == XMO_NON_WRITABLE_PARAMETER_ERR:
-                    raise NonWritableParameterException(action_error)
-
-                if action_error_desc == XMO_UNKNOWN_PATH_ERR:
-                    raise UnknownPathException(action_error)
-
-                if action_error_desc == XMO_MAX_SESSION_COUNT_ERR:
-                    raise MaximumSessionCountException(action_error)
-
-                raise UnknownException(action_error)
-
-        return result
 
     async def __api_request_async(self, actions, priority=False):
         """Build request to the internal JSON-req API."""
@@ -246,25 +253,15 @@ class SagemcomClient:
         }
 
         form_data = {"req": json.dumps(payload, separators=(",", ":"))}
-
-        retries_left = 5
-        seconds_before_retry = 0.1
-
-        while True:
-            try:
-                async with self.session.post(api_host, data=form_data) as response:
-                    result = await self.__process_response(response)
-                    return result
-            except (
-                ClientConnectorError,
-                ClientOSError,
-                ServerDisconnectedError,
-            ) as exception:
-                if retries_left == 0:
-                    raise ConnectionError(str(exception)) from exception
-                await asyncio.sleep(seconds_before_retry)
-                seconds_before_retry *= 2
-                retries_left -= 1
+        try:
+            result = await self.__post(api_host, form_data)
+            return result
+        except (
+            ClientConnectorError,
+            ClientOSError,
+            ServerDisconnectedError,
+        ) as exception:
+            raise ConnectionError(str(exception)) from exception
 
     async def login(self):
         """TODO."""
