@@ -1,4 +1,5 @@
 """Constants for the Sagemcom F@st client."""
+
 API_ENDPOINT = "/cgi/json-req"
 
 DEFAULT_TIMEOUT = 7
