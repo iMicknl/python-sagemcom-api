@@ -268,6 +268,7 @@ class SagemcomClient:
 
     async def login(self):
         """Login to the SagemCom F@st router using a username and password."""
+
         actions = {
             "id": 0,
             "method": "logIn",
@@ -328,6 +329,10 @@ class SagemcomClient:
                 )
 
                 await self.login()
+
+                self._server_nonce = ""
+                self._session_id = 0
+                self._request_id = -1
 
                 return encryption_method
             except (
