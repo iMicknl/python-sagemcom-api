@@ -10,6 +10,10 @@ class AuthenticationException(Exception):
     """Raised when authentication is not correct."""
 
 
+class LoginRetryErrorException(Exception):
+    """Raised when too many login retries are attempted."""
+
+
 class LoginTimeoutException(Exception):
     """Raised when a timeout is encountered during login."""
 

@@ -27,6 +27,7 @@ from .const import (
     DEFAULT_USER_AGENT,
     XMO_ACCESS_RESTRICTION_ERR,
     XMO_AUTHENTICATION_ERR,
+    XMO_LOGIN_RETRY_ERR,
     XMO_MAX_SESSION_COUNT_ERR,
     XMO_NO_ERR,
     XMO_NON_WRITABLE_PARAMETER_ERR,
@@ -39,6 +40,7 @@ from .exceptions import (
     AccessRestrictionException,
     AuthenticationException,
     BadRequestException,
+    LoginRetryErrorException,
     LoginTimeoutException,
     MaximumSessionCountException,
     NonWritableParameterException,
@@ -61,7 +63,7 @@ class SagemcomClient:
         host: str,
         username: str,
         password: str,
-        authentication_method: EncryptionMethod,
+        authentication_method: EncryptionMethod | None = None,
         session: ClientSession | None = None,
         ssl: bool | None = False,
         verify_ssl: bool | None = True,
@@ -78,8 +80,8 @@ class SagemcomClient:
         self.host = host
         self.username = username
         self.authentication_method = authentication_method
+        self.password = password
         self._password_hash = self.__generate_hash(password)
-
         self.protocol = "https" if ssl else "http"
 
         self._current_nonce = None
@@ -232,6 +234,9 @@ class SagemcomClient:
                     if action_error_desc == XMO_MAX_SESSION_COUNT_ERR:
                         raise MaximumSessionCountException(action_error)
 
+                    if action_error_desc == XMO_LOGIN_RETRY_ERR:
+                        raise LoginRetryErrorException(action_error)
+
                     raise UnknownException(action_error)
 
             return result
@@ -267,7 +272,8 @@ class SagemcomClient:
             raise ConnectionError(str(exception)) from exception
 
     async def login(self):
-        """TODO."""
+        """Login to the SagemCom F@st router using a username and password."""
+
         actions = {
             "id": 0,
             "method": "logIn",
@@ -296,7 +302,7 @@ class SagemcomClient:
             response = await self.__api_request_async([actions], True)
         except asyncio.TimeoutError as exception:
             raise LoginTimeoutException(
-                "Request timed-out. This is mainly due to using the wrong encryption method."
+                "Login request timed-out. This could be caused by using the wrong encryption method, or using a (non) SSL connection."
             ) from exception
 
         data = self.__get_response(response)
@@ -317,6 +323,31 @@ class SagemcomClient:
         self._session_id = -1
         self._server_nonce = ""
         self._request_id = -1
+
+    async def get_encryption_method(self):
+        """Determine which encryption method to use for authentication and set it directly."""
+        for encryption_method in EncryptionMethod:
+            try:
+                self.authentication_method = encryption_method
+                self._password_hash = self.__generate_hash(
+                    self.password, encryption_method
+                )
+
+                await self.login()
+
+                self._server_nonce = ""
+                self._session_id = 0
+                self._request_id = -1
+
+                return encryption_method
+            except (
+                LoginTimeoutException,
+                AuthenticationException,
+                LoginRetryErrorException,
+            ):
+                pass
+
+        return None
 
     async def get_value_by_xpath(self, xpath: str, options: dict | None = None) -> dict:
         """
