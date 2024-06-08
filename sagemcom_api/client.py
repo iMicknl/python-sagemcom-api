@@ -232,6 +232,9 @@ class SagemcomClient:
                     if action_error_desc == XMO_MAX_SESSION_COUNT_ERR:
                         raise MaximumSessionCountException(action_error)
 
+                    if action_error_desc == XMO_LOGIN_RETRY_ERR:
+                        raise LoginRetryErrorException(action_error)
+
                     raise UnknownException(action_error)
 
             return result
