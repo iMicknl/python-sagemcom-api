@@ -172,6 +172,8 @@ class SagemcomClient:
             value = self.__get_response(response, index)["value"]
         except KeyError:
             value = None
+        except IndexError:
+            value = None
 
         # Rewrite result to snake_case
         value = humps.decamelize(value)
@@ -421,6 +423,7 @@ class SagemcomClient:
     async def reboot(self):
         """Reboot Sagemcom F@st device."""
         action = {
+            "id": 0,
             "method": "reboot",
             "xpath": "Device",
             "parameters": {"source": "GUI"},
