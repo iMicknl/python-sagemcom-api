@@ -1,4 +1,5 @@
 """Enums for the Sagemcom F@st client."""
+
 from enum import unique
 import sys
 

@@ -1,4 +1,5 @@
 """Client to communicate with Sagemcom F@st internal APIs."""
+
 from __future__ import annotations
 
 import asyncio
