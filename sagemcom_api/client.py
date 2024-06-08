@@ -1,4 +1,5 @@
 """Client to communicate with Sagemcom F@st internal APIs."""
+
 from __future__ import annotations
 
 import asyncio
@@ -26,6 +27,7 @@ from .const import (
     DEFAULT_USER_AGENT,
     XMO_ACCESS_RESTRICTION_ERR,
     XMO_AUTHENTICATION_ERR,
+    XMO_LOGIN_RETRY_ERR,
     XMO_MAX_SESSION_COUNT_ERR,
     XMO_NO_ERR,
     XMO_NON_WRITABLE_PARAMETER_ERR,
@@ -38,6 +40,7 @@ from .exceptions import (
     AccessRestrictionException,
     AuthenticationException,
     BadRequestException,
+    LoginRetryErrorException,
     LoginTimeoutException,
     MaximumSessionCountException,
     NonWritableParameterException,
@@ -79,7 +82,6 @@ class SagemcomClient:
         self.authentication_method = authentication_method
         self.password = password
         self._password_hash = self.__generate_hash(password)
-
         self.protocol = "https" if ssl else "http"
 
         self._current_nonce = None
@@ -321,11 +323,18 @@ class SagemcomClient:
         for encryption_method in EncryptionMethod:
             try:
                 self.authentication_method = encryption_method
-                self._password_hash = self.__generate_hash(self.password)
+                self._password_hash = self.__generate_hash(
+                    self.password, encryption_method
+                )
 
                 await self.login()
+
                 return encryption_method
-            except (LoginTimeoutException, AuthenticationException):
+            except (
+                LoginTimeoutException,
+                AuthenticationException,
+                LoginRetryErrorException,
+            ):
                 pass
 
         return None
