@@ -20,6 +20,7 @@ The Sagemcom F@st series is used by multiple cable companies, where some cable c
 | Sagemcom F@st 3864    | Optus                | sha512                | username: guest, password: "" |
 | Sagemcom F@st 3865b   | Proximus (b-box3)    | md5                   |                               |
 | Sagemcom F@st 3890V3  | Delta / Zeelandnet   | sha512                |                               |
+| Sagemcom F@st 3890V3  | DNA (DNA Mesh Wifi F-3890) | sha512                | "Not allowed to set AdvancedMode parameter on your device", username: admin |
 | Sagemcom F@st 3896    |                      | sha512                | username: admin               |
 | Sagemcom F@st 4360Air | KPN                  | md5                   |                               |
 | Sagemcom F@st 4353    | Belong Gateway       | md5                   | username: admin, password: "" |
