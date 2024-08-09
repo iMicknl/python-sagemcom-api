@@ -15,29 +15,31 @@ Python 3.9+ required.
 
 The Sagemcom F@st series is used by multiple cable companies, where some cable companies did rebrand the router. Examples are the b-box from Proximus, Home Hub from bell and the Smart Hub from BT.
 
-| Router Model          | Provider(s)          | Authentication Method | Comments                      |
-| --------------------- | -------------------- | --------------------- | ----------------------------- |
-| Sagemcom F@st 3864    | Optus                | sha512                | username: guest, password: "" |
-| Sagemcom F@st 3865b   | Proximus (b-box3)    | md5                   |                               |
-| Sagemcom F@st 3890V3  | Delta / Zeelandnet   | sha512                |                               |
-| Sagemcom F@st 3890V3  | DNA (DNA Mesh Wifi F-3890) | sha512                | "Not allowed to set AdvancedMode parameter on your device", username: admin |
-| Sagemcom F@st 3896    |                      | sha512                | username: admin               |
-| Sagemcom F@st 4360Air | KPN                  | md5                   |                               |
-| Sagemcom F@st 4353    | Belong Gateway       | md5                   | username: admin, password: "" |
-| Sagemcom F@st 5250    | Bell (Home Hub 2000) | md5                   | username: guest, password: "" |
-| Sagemcom F@st 5280    |                      | sha512                |                               |
-| Sagemcom F@st 5290 / FWR226e    | Frontier             | md5                   | username: admin               |
-| Sagemcom F@st 5359    | KPN (Box 12)         | sha512                | username: admin               |
-| Sagemcom F@st 5364    | BT (Smart Hub)       | md5                   | username: guest, password: "" |
-| SagemCom F@st 5366SD  | Eir F3000            | md5                   |                               |
-| Sagemcom F@st 5370e   | Telia                | sha512                |                               |
-| Sagemcom F@st 5380    | TDC                  | md5                   |                               |
-| Sagemcom F@st 5566    | Bell (Home Hub 3000) | md5                   | username: guest, password: "" |
-| Sagemcom F@st 5688T   | Salt (FibreBox_X6)   | sha512                | username: admin               |
-| Sagemcom F@st 5689    | Bell (Home Hub 4000) | md5                   | username: admin, password: "" |
-| Sagemcom F@st 5655V2  | MásMóvil             | md5                   |                               |
-| Sagemcom F@st 5657IL  |                      | md5                   |                               |
-| Speedport Pro         | Telekom              | md5                   | username: admin               |
+| Router Model                 | Provider(s)                | Authentication Method | Comments                      |
+| ---------------------------- | -------------------------- | --------------------- | ----------------------------- |
+| Sagemcom F@st 3864           | Optus                      | sha512                | username: guest, password: "" |
+| Sagemcom F@st 3865b          | Proximus (b-box3)          | md5                   |                               |
+| Sagemcom F@st 3890V3         | Delta / Zeelandnet         | sha512                |                               |
+| Sagemcom F@st 3890V3         | DNA (DNA Mesh Wifi F-3890) | sha512                | username: admin               |
+| Sagemcom F@st 3896           |                            | sha512                | username: admin               |
+| Sagemcom F@st 4360Air        | KPN                        | md5                   |                               |
+| Sagemcom F@st 4353           | Belong Gateway             | md5                   | username: admin, password: "" |
+| Sagemcom F@st 5250           | Bell (Home Hub 2000)       | md5                   | username: guest, password: "" |
+| Sagemcom F@st 5280           |                            | sha512                |                               |
+| Sagemcom F@st 5290 / FWR226e | Frontier                   | md5                   | username: admin               |
+| Sagemcom F@st 5359           | KPN (Box 12)               | sha512                | username: admin               |
+| Sagemcom F@st 5364           | BT (Smart Hub)             | md5                   | username: guest, password: "" |
+| SagemCom F@st 5366SD         | Eir F3000                  | md5                   |                               |
+| Sagemcom F@st 5370e          | Telia                      | sha512                |                               |
+| Sagemcom F@st 5380           | TDC                        | md5                   |                               |
+| Sagemcom F@st 5566           | Bell (Home Hub 3000)       | md5                   | username: guest, password: "" |
+| Sagemcom F@st 5688T          | Salt (FibreBox_X6)         | sha512                | username: admin               |
+| Sagemcom F@st 5689           | Bell (Home Hub 4000)       | md5                   | username: admin, password: "" |
+| Sagemcom F@st 5689E          | Bell (Giga Hub)            | sha512                | username: admin, password: "" |
+| Sagemcom F@st 5690           | Bell (Giga Hub)            | sha512                | username: admin, password: "" |
+| Sagemcom F@st 5655V2         | MásMóvil                   | md5                   |                               |
+| Sagemcom F@st 5657IL         |                            | md5                   |                               |
+| Speedport Pro                | Telekom                    | md5                   | username: admin               |
 
 > Contributions welcome. If you router model is supported by this package, but not in the list above, please create [an issue](https://github.com/iMicknl/python-sagemcom-api/issues/new) or pull request.
 
@@ -157,6 +159,12 @@ from aiohttp import ClientSession, ClientTimeout
 session = ClientSession(timeout=ClientTimeout(100))
 client = SagemcomClient(session=session)
 ```
+
+### Debugging
+
+- Unable to login (XMO_AUTHENTICATION_ERR)
+
+See [advanced instructions for debugging](docs/debugging.md) common issues.
 
 ## Inspired by
 
