@@ -279,7 +279,7 @@ class SagemcomClient:
         payload = {
             "request": {
                 "id": self._request_id,
-                "session-id": str(self._session_id),
+                "session-id": int(self._session_id),
                 "priority": priority,
                 "actions": actions,
                 "cnonce": self._current_nonce,
