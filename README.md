@@ -158,6 +158,12 @@ session = ClientSession(timeout=ClientTimeout(100))
 client = SagemcomClient(session=session)
 ```
 
+### Debugging
+
+- Unable to login (XMO_AUTHENTICATION_ERR)
+
+See [advanced instructions for debugging](docs/debugging.md) common issues.
+
 ## Inspired by
 
 - [wuseman/SAGEMCOM-FAST-5370e-TELIA](https://github.com/wuseman/SAGEMCOM-FAST-5370e-TELIA)
