@@ -257,17 +257,6 @@ class SagemcomClient:
 
             return result
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            AuthenticationException,
-            LoginRetryErrorException,
-            LoginTimeoutException,
-            InvalidSessionException,
-        ),
-        max_tries=2,
-        on_backoff=retry_login,
-    )
     async def __api_request_async(self, actions, priority=False):
         """Build request to the internal JSON-req API."""
         self.__generate_request_id()
@@ -376,6 +365,17 @@ class SagemcomClient:
 
         return None
 
+    @backoff.on_exception(
+        backoff.expo,
+        (
+            AuthenticationException,
+            LoginRetryErrorException,
+            LoginTimeoutException,
+            InvalidSessionException,
+        ),
+        max_tries=1,
+        on_backoff=retry_login,
+    )
     async def get_value_by_xpath(self, xpath: str, options: dict | None = None) -> dict:
         """
         Retrieve raw value from router using XPath.
@@ -395,6 +395,17 @@ class SagemcomClient:
 
         return data
 
+    @backoff.on_exception(
+        backoff.expo,
+        (
+            AuthenticationException,
+            LoginRetryErrorException,
+            LoginTimeoutException,
+            InvalidSessionException,
+        ),
+        max_tries=1,
+        on_backoff=retry_login,
+    )
     async def get_values_by_xpaths(self, xpaths, options: dict | None = None) -> dict:
         """
         Retrieve raw values from router using XPath.
@@ -418,6 +429,17 @@ class SagemcomClient:
 
         return data
 
+    @backoff.on_exception(
+        backoff.expo,
+        (
+            AuthenticationException,
+            LoginRetryErrorException,
+            LoginTimeoutException,
+            InvalidSessionException,
+        ),
+        max_tries=1,
+        on_backoff=retry_login,
+    )
     async def set_value_by_xpath(
         self, xpath: str, value: str, options: dict | None = None
     ) -> dict:
@@ -440,6 +462,17 @@ class SagemcomClient:
 
         return response
 
+    @backoff.on_exception(
+        backoff.expo,
+        (
+            AuthenticationException,
+            LoginRetryErrorException,
+            LoginTimeoutException,
+            InvalidSessionException,
+        ),
+        max_tries=1,
+        on_backoff=retry_login,
+    )
     async def get_device_info(self) -> DeviceInfo:
         """Retrieve information about Sagemcom F@st device."""
         try:
@@ -460,6 +493,17 @@ class SagemcomClient:
 
         return DeviceInfo(**data)
 
+    @backoff.on_exception(
+        backoff.expo,
+        (
+            AuthenticationException,
+            LoginRetryErrorException,
+            LoginTimeoutException,
+            InvalidSessionException,
+        ),
+        max_tries=1,
+        on_backoff=retry_login,
+    )
     async def get_hosts(self, only_active: bool | None = False) -> list[Device]:
         """Retrieve hosts connected to Sagemcom F@st device."""
         data = await self.get_value_by_xpath(
@@ -473,6 +517,17 @@ class SagemcomClient:
 
         return devices
 
+    @backoff.on_exception(
+        backoff.expo,
+        (
+            AuthenticationException,
+            LoginRetryErrorException,
+            LoginTimeoutException,
+            InvalidSessionException,
+        ),
+        max_tries=1,
+        on_backoff=retry_login,
+    )
     async def get_port_mappings(self) -> list[PortMapping]:
         """Retrieve configured Port Mappings on Sagemcom F@st device."""
         data = await self.get_value_by_xpath("Device/NAT/PortMappings")
@@ -480,6 +535,17 @@ class SagemcomClient:
 
         return port_mappings
 
+    @backoff.on_exception(
+        backoff.expo,
+        (
+            AuthenticationException,
+            LoginRetryErrorException,
+            LoginTimeoutException,
+            InvalidSessionException,
+        ),
+        max_tries=1,
+        on_backoff=retry_login,
+    )
     async def reboot(self):
         """Reboot Sagemcom F@st device."""
         action = {
