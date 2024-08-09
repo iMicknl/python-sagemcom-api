@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Mapping
 import hashlib
 import json
 import math
 import random
 from types import TracebackType
+from typing import Any
 import urllib.parse
 
 from aiohttp import (
@@ -27,6 +29,7 @@ from .const import (
     DEFAULT_USER_AGENT,
     XMO_ACCESS_RESTRICTION_ERR,
     XMO_AUTHENTICATION_ERR,
+    XMO_INVALID_SESSION_ERR,
     XMO_LOGIN_RETRY_ERR,
     XMO_MAX_SESSION_COUNT_ERR,
     XMO_NO_ERR,
@@ -40,6 +43,7 @@ from .exceptions import (
     AccessRestrictionException,
     AuthenticationException,
     BadRequestException,
+    InvalidSessionException,
     LoginRetryErrorException,
     LoginTimeoutException,
     MaximumSessionCountException,
@@ -49,6 +53,11 @@ from .exceptions import (
     UnknownPathException,
 )
 from .models import Device, DeviceInfo, PortMapping
+
+
+async def retry_login(invocation: Mapping[str, Any]) -> None:
+    """Retry login via backoff if an exception occurs."""
+    await invocation["args"][0].login()
 
 
 # pylint: disable=too-many-instance-attributes
@@ -118,7 +127,7 @@ class SagemcomClient:
 
     def __generate_nonce(self):
         """Generate pseudo random number (nonce) to avoid replay attacks."""
-        self._current_nonce = math.floor(random.randrange(0, 1) * 500000)
+        self._current_nonce = math.floor(random.randrange(0, 500000))
 
     def __generate_request_id(self):
         """Generate sequential request ID."""
@@ -187,6 +196,7 @@ class SagemcomClient:
         (ClientConnectorError, ClientOSError, ServerDisconnectedError),
         max_tries=5,
     )
+    # pylint: disable=too-many-branches
     async def __post(self, url, data):
         async with self.session.post(url, data=data) as response:
             if response.status == 400:
@@ -206,6 +216,12 @@ class SagemcomClient:
                 or error["description"] == "Ok"  # NOQA: W503
             ):
                 return result
+
+            if error["description"] == XMO_INVALID_SESSION_ERR:
+                self._session_id = 0
+                self._server_nonce = ""
+                self._request_id = -1
+                raise InvalidSessionException(error)
 
             # Error in one of the actions
             if error["description"] == XMO_REQUEST_ACTION_ERR:
@@ -241,6 +257,17 @@ class SagemcomClient:
 
             return result
 
+    @backoff.on_exception(
+        backoff.expo,
+        (
+            AuthenticationException,
+            LoginRetryErrorException,
+            LoginTimeoutException,
+            InvalidSessionException,
+        ),
+        max_tries=2,
+        on_backoff=retry_login,
+    )
     async def __api_request_async(self, actions, priority=False):
         """Build request to the internal JSON-req API."""
         self.__generate_request_id()
@@ -252,7 +279,7 @@ class SagemcomClient:
         payload = {
             "request": {
                 "id": self._request_id,
-                "session-id": str(self._session_id),
+                "session-id": int(self._session_id),
                 "priority": priority,
                 "actions": actions,
                 "cnonce": self._current_nonce,
@@ -435,7 +462,9 @@ class SagemcomClient:
 
     async def get_hosts(self, only_active: bool | None = False) -> list[Device]:
         """Retrieve hosts connected to Sagemcom F@st device."""
-        data = await self.get_value_by_xpath("Device/Hosts/Hosts")
+        data = await self.get_value_by_xpath(
+            "Device/Hosts/Hosts", options={"capability-flags": {"interface": True}}
+        )
         devices = [Device(**d) for d in data]
 
         if only_active:
