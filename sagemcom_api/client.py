@@ -287,8 +287,6 @@ class SagemcomClient:
             }
         }
 
-        print(payload)
-
         form_data = {"req": json.dumps(payload, separators=(",", ":"))}
         try:
             result = await self.__post(api_host, form_data)
