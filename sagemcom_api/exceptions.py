@@ -18,6 +18,10 @@ class UnknownException(BaseSagemcomException):
     """Unknown exception."""
 
 
+class UnsupportedHostException(BaseSagemcomException):
+    """Raised when API is not available on given host."""
+
+
 # Exceptions provided by SagemCom API
 class AccessRestrictionException(BaseSagemcomException):
     """Raised when current user has access restrictions."""

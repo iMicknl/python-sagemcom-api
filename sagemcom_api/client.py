@@ -51,6 +51,7 @@ from .exceptions import (
     UnauthorizedException,
     UnknownException,
     UnknownPathException,
+    UnsupportedHostException,
 )
 from .models import Device, DeviceInfo, PortMapping
 
@@ -202,6 +203,10 @@ class SagemcomClient:
             if response.status == 400:
                 result = await response.text()
                 raise BadRequestException(result)
+
+            if response.status == 404:
+                result = await response.text()
+                raise UnsupportedHostException(result)
 
             if response.status != 200:
                 result = await response.text()
