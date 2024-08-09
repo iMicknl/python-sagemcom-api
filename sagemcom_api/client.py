@@ -29,6 +29,7 @@ from .const import (
     DEFAULT_USER_AGENT,
     XMO_ACCESS_RESTRICTION_ERR,
     XMO_AUTHENTICATION_ERR,
+    XMO_INVALID_SESSION_ERR,
     XMO_LOGIN_RETRY_ERR,
     XMO_MAX_SESSION_COUNT_ERR,
     XMO_NO_ERR,
@@ -42,6 +43,7 @@ from .exceptions import (
     AccessRestrictionException,
     AuthenticationException,
     BadRequestException,
+    InvalidSessionException,
     LoginRetryErrorException,
     LoginTimeoutException,
     MaximumSessionCountException,
@@ -191,15 +193,10 @@ class SagemcomClient:
 
     @backoff.on_exception(
         backoff.expo,
-        (AuthenticationException, LoginRetryErrorException, LoginTimeoutException),
-        max_tries=2,
-        on_backoff=retry_login,
-    )
-    @backoff.on_exception(
-        backoff.expo,
         (ClientConnectorError, ClientOSError, ServerDisconnectedError),
         max_tries=5,
     )
+    # pylint: disable=too-many-branches
     async def __post(self, url, data):
         async with self.session.post(url, data=data) as response:
             if response.status == 400:
@@ -219,6 +216,12 @@ class SagemcomClient:
                 or error["description"] == "Ok"  # NOQA: W503
             ):
                 return result
+
+            if error["description"] == XMO_INVALID_SESSION_ERR:
+                self._session_id = 0
+                self._server_nonce = ""
+                self._request_id = -1
+                raise InvalidSessionException(error)
 
             # Error in one of the actions
             if error["description"] == XMO_REQUEST_ACTION_ERR:
@@ -254,6 +257,17 @@ class SagemcomClient:
 
             return result
 
+    @backoff.on_exception(
+        backoff.expo,
+        (
+            AuthenticationException,
+            LoginRetryErrorException,
+            LoginTimeoutException,
+            InvalidSessionException,
+        ),
+        max_tries=2,
+        on_backoff=retry_login,
+    )
     async def __api_request_async(self, actions, priority=False):
         """Build request to the internal JSON-req API."""
         self.__generate_request_id()
@@ -272,6 +286,8 @@ class SagemcomClient:
                 "auth-key": self._auth_key,
             }
         }
+
+        print(payload)
 
         form_data = {"req": json.dumps(payload, separators=(",", ":"))}
         try:
