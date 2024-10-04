@@ -65,9 +65,10 @@ HOST = ""
 USERNAME = ""
 PASSWORD = ""
 ENCRYPTION_METHOD = EncryptionMethod.SHA512 # or EncryptionMethod.MD5
+VALIDATE_SSL_CERT = True
 
 async def main() -> None:
-    async with SagemcomClient(HOST, USERNAME, PASSWORD, ENCRYPTION_METHOD) as client:
+    async with SagemcomClient(HOST, USERNAME, PASSWORD, ENCRYPTION_METHOD, verify_ssl=VALIDATE_SSL_CERT) as client:
         try:
             await client.login()
         except Exception as exception:  # pylint: disable=broad-except
