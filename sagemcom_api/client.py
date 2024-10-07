@@ -128,9 +128,6 @@ class SagemcomClient:
 
     def __generate_nonce(self, upper_limit=500000):
         """Generate pseudo random number (nonce) to avoid replay attacks."""
-        if self.authentication_method == EncryptionMethod.MD5_NONCE:
-            UINTMAX = 4294967295
-            upper_limit = UINTMAX
         self._current_nonce = math.floor(random.randrange(0, upper_limit))
 
     def __generate_request_id(self):
