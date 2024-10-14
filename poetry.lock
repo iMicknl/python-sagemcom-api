@@ -830,13 +830,13 @@ dev = ["argcomplete", "attrs (>=19.2)", "hypothesis (>=3.56)", "mock", "pygments
 
 [[package]]
 name = "pyupgrade"
-version = "3.17.0"
+version = "3.18.0"
 description = "A tool to automatically upgrade syntax for newer versions."
 optional = false
 python-versions = ">=3.9"
 files = [
-    {file = "pyupgrade-3.17.0-py2.py3-none-any.whl", hash = "sha256:cbc8f67a61d3f4e7ca9c2ef57b9aae67f023d3780ce30c99fccec78401723754"},
-    {file = "pyupgrade-3.17.0.tar.gz", hash = "sha256:d5dd1dcaf9a016c31508bb9d3d09fd335d736578092f91df52bb26ac30c37919"},
+    {file = "pyupgrade-3.18.0-py2.py3-none-any.whl", hash = "sha256:74dbca15f715342393d20e31575d846643fdeb32c6fe8d9598c41645bab3f762"},
+    {file = "pyupgrade-3.18.0.tar.gz", hash = "sha256:894cf4c64c17c020f86adaab55a82449a7add29b1ea4a1b9e659ed48c922d3ae"},
 ]
 
 [package.dependencies]
@@ -1076,4 +1076,4 @@ multidict = ">=4.0"
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.9,<4.0"
-content-hash = "2660fa0428f83341a1cde46ce3ce5fefda0df17b153039d4895a3c208888ec5c"
+content-hash = "9208880364a943cb8c4312d52e7d3fc65a4dffd45303e9005e78d9fe9e22e967"
