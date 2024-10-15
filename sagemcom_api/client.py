@@ -106,7 +106,9 @@ class SagemcomClient:
             else ClientSession(
                 headers={"User-Agent": f"{DEFAULT_USER_AGENT}"},
                 timeout=ClientTimeout(DEFAULT_TIMEOUT),
-                connector=TCPConnector(verify_ssl=verify_ssl if verify_ssl else True),
+                connector=TCPConnector(
+                    verify_ssl=verify_ssl if verify_ssl is not None else True
+                ),
             )
         )
 
