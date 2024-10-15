@@ -27,6 +27,7 @@ from .const import (
     API_ENDPOINT,
     DEFAULT_TIMEOUT,
     DEFAULT_USER_AGENT,
+    UINT_MAX,
     XMO_ACCESS_RESTRICTION_ERR,
     XMO_AUTHENTICATION_ERR,
     XMO_INVALID_SESSION_ERR,
@@ -135,14 +136,13 @@ class SagemcomClient:
         self._request_id += 1
 
     def __generate_md5_nonce_hash(self):
-        """Build MD5 with nonce hash token. UINTMAX is hardcoded in the firmware."""
-        UINTMAX = 4294967295
+        """Build MD5 with nonce hash token. UINT_MAX is hardcoded in the firmware."""
 
         def md5(input_string):
             return hashlib.md5(input_string.encode()).hexdigest()
 
         n = (
-            self.__generate_nonce(UINTMAX)
+            self.__generate_nonce(UINT_MAX)
             if self._current_nonce is None
             else self._current_nonce
         )
