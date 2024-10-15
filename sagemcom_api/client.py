@@ -27,6 +27,7 @@ from .const import (
     API_ENDPOINT,
     DEFAULT_TIMEOUT,
     DEFAULT_USER_AGENT,
+    UINT_MAX,
     XMO_ACCESS_RESTRICTION_ERR,
     XMO_AUTHENTICATION_ERR,
     XMO_INVALID_SESSION_ERR,
@@ -91,10 +92,10 @@ class SagemcomClient:
         self.username = username
         self.authentication_method = authentication_method
         self.password = password
+        self._current_nonce = None
         self._password_hash = self.__generate_hash(password)
         self.protocol = "https" if ssl else "http"
 
-        self._current_nonce = None
         self._server_nonce = ""
         self._session_id = 0
         self._request_id = -1
@@ -126,13 +127,30 @@ class SagemcomClient:
         """Close the websession."""
         await self.session.close()
 
-    def __generate_nonce(self):
+    def __generate_nonce(self, upper_limit=500000):
         """Generate pseudo random number (nonce) to avoid replay attacks."""
-        self._current_nonce = math.floor(random.randrange(0, 500000))
+        self._current_nonce = math.floor(random.randrange(0, upper_limit))
 
     def __generate_request_id(self):
         """Generate sequential request ID."""
         self._request_id += 1
+
+    def __generate_md5_nonce_hash(self):
+        """Build MD5 with nonce hash token. UINT_MAX is hardcoded in the firmware."""
+
+        def md5(input_string):
+            return hashlib.md5(input_string.encode()).hexdigest()
+
+        n = (
+            self.__generate_nonce(UINT_MAX)
+            if self._current_nonce is None
+            else self._current_nonce
+        )
+        f = 0
+        l_nonce = ""
+        ha1 = md5(self.username + ":" + l_nonce + ":" + md5(self.password))
+
+        return md5(ha1 + ":" + str(f) + ":" + str(n) + ":JSON:/cgi/json-req")
 
     def __generate_hash(self, value, authentication_method=None):
         """Hash value with selected encryption method and return HEX value."""
@@ -145,6 +163,9 @@ class SagemcomClient:
 
         if auth_method == EncryptionMethod.SHA512:
             return hashlib.sha512(bytes_object).hexdigest()
+
+        if auth_method == EncryptionMethod.MD5_NONCE:
+            return self.__generate_md5_nonce_hash()
 
         return value
 
