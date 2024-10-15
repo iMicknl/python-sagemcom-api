@@ -141,9 +141,13 @@ class SagemcomClient:
         def md5(input_string):
             return hashlib.md5(input_string.encode()).hexdigest()
 
-        n = self.__generate_nonce(UINTMAX) if self._current_nonce == None else self._current_nonce
+        n = (
+            self.__generate_nonce(UINTMAX)
+            if self._current_nonce is None
+            else self._current_nonce
+        )
         f = 0
-        l_nonce = "" 
+        l_nonce = ""
         ha1 = md5(self.username + ":" + l_nonce + ":" + md5(self.password))
 
         return md5(ha1 + ":" + str(f) + ":" + str(n) + ":JSON:/cgi/json-req")
