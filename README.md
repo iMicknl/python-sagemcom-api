@@ -21,7 +21,7 @@ The Sagemcom F@st series is used by multiple cable companies, where some cable c
 | Sagemcom F@st 3865b          | Proximus (b-box3)          | md5                   |                               |
 | Sagemcom F@st 3890V3         | Delta / Zeelandnet         | sha512                |                               |
 | Sagemcom F@st 3890V3         | DNA (DNA Mesh Wifi F-3890) | sha512                | username: admin               |
-| Sagemcom F@st 3896           |                            | sha512                | username: admin               |
+| Sagemcom F@st 3896           | Ziggo<sup>*</sup>          | sha512                | username: admin               |
 | Sagemcom F@st 4360Air        | KPN                        | md5                   |                               |
 | Sagemcom F@st 4353           | Belong Gateway             | md5                   | username: admin, password: "" |
 | Sagemcom F@st 5250           | Bell (Home Hub 2000)       | md5                   | username: guest, password: "" |
@@ -40,6 +40,8 @@ The Sagemcom F@st series is used by multiple cable companies, where some cable c
 | Sagemcom F@st 5655V2         | MásMóvil                   | md5                   |                               |
 | Sagemcom F@st 5657IL         |                            | md5                   |                               |
 | Speedport Pro                | Telekom                    | md5                   | username: admin               |
+
+<sup>*</sup> The firmware provided on the Sagemcom F@st 3896 router from Ziggo does not support the endpoint used in this library. [sagemcom-f3896lg-zg-api](https://github.com/mgyucht/sagemcom-f3896lg-zg-api) provides an API client suitable for Ziggo's firmware.
 
 > Contributions welcome. If you router model is supported by this package, but not in the list above, please create [an issue](https://github.com/iMicknl/python-sagemcom-api/issues/new) or pull request.
 
