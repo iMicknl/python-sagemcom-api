@@ -404,7 +404,7 @@ class SagemcomClient:
         max_tries=1,
         on_backoff=retry_login,
     )
-    async def get_value_by_xpath(self, xpath: str, options: dict | None = None) -> dict:
+    async def get_value_by_xpath(self, xpath: str, options: dict | None = None, escape_xpath: bool | None = True) -> dict:
         """
         Retrieve raw value from router using XPath.
 
@@ -414,7 +414,7 @@ class SagemcomClient:
         actions = {
             "id": 0,
             "method": "getValue",
-            "xpath": urllib.parse.quote(xpath),
+            "xpath": urllib.parse.quote(xpath) if escape_xpath else xpath,
             "options": options if options else {},
         }
 
