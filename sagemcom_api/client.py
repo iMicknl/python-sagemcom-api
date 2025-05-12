@@ -414,7 +414,7 @@ class SagemcomClient:
         actions = {
             "id": 0,
             "method": "getValue",
-            "xpath": urllib.parse.quote(xpath),
+            "xpath": urllib.parse.quote(xpath, "/=[]'"),
             "options": options if options else {},
         }
 
