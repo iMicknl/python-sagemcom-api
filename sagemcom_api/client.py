@@ -8,6 +8,7 @@ import hashlib
 import json
 import math
 import random
+from ssl import SSLContext
 from types import TracebackType
 from typing import Any
 import urllib.parse
@@ -78,6 +79,7 @@ class SagemcomClient:
         session: ClientSession | None = None,
         ssl: bool | None = False,
         verify_ssl: bool | None = True,
+        ssl_context: SSLContext | None = None
     ):
         """
         Create a SagemCom client.
@@ -107,7 +109,8 @@ class SagemcomClient:
                 headers={"User-Agent": f"{DEFAULT_USER_AGENT}"},
                 timeout=ClientTimeout(DEFAULT_TIMEOUT),
                 connector=TCPConnector(
-                    verify_ssl=verify_ssl if verify_ssl is not None else True
+                    verify_ssl=verify_ssl,
+                    ssl_context=ssl_context
                 ),
             )
         )
