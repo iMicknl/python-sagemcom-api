@@ -30,7 +30,7 @@ black = "^24.10"
 pylint = "^3.2.7"
 isort = "^5.10.1"
 mypy = "^1.19"
-flake8 = "^7.1.2"
+flake8 = "^7.3.0"
 pyupgrade = "^3.21.0"
 
 [build-system]
