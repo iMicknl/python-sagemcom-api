@@ -445,7 +445,7 @@ class SagemcomClient:
             {
                 "id": i,
                 "method": "getValue",
-                "xpath": urllib.parse.quote(xpath),
+                "xpath": urllib.parse.quote(xpath, "/=[]'"),
                 "options": options if options else {},
             }
             for i, xpath in enumerate(xpaths.values())
@@ -481,7 +481,7 @@ class SagemcomClient:
         actions = {
             "id": 0,
             "method": "setValue",
-            "xpath": urllib.parse.quote(xpath),
+            "xpath": urllib.parse.quote(xpath, "/=[]'"),
             "parameters": {"value": str(value)},
             "options": options if options else {},
         }
