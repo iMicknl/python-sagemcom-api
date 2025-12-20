@@ -1,0 +1,124 @@
+{
+  "reply": {
+    "uid": 0,
+    "id": 1,
+    "error": {
+      "code": 16777216,
+      "description": "XMO_REQUEST_NO_ERR"
+    },
+    "actions": [
+      {
+        "uid": 1,
+        "id": 0,
+        "error": {
+          "code": 16777238,
+          "description": "XMO_NO_ERR"
+        },
+        "callbacks": [
+          {
+            "uid": 1,
+            "result": {
+              "code": 16777238,
+              "description": "XMO_NO_ERR"
+            },
+            "xpath": "Device/Hosts/Hosts",
+            "parameters": {
+              "value": [
+                {
+                  "uid": 1,
+                  "Alias": "cpe-1",
+                  "PhysAddress": "11:22:33:AA:BB:CC",
+                  "IPAddress": "",
+                  "AddressSource": "NONE",
+                  "DHCPClient": "",
+                  "LeaseTimeRemaining": 0,
+                  "AssociatedDevice": "",
+                  "RemoteAssociatedDevice": "",
+                  "Layer1Interface": "",
+                  "Layer3Interface": "",
+                  "VendorClassID": "",
+                  "ClientID": "",
+                  "UserClassID": "",
+                  "HostName": "",
+                  "Active": false,
+                  "LeaseStart": 0,
+                  "LeaseDuration": 0,
+                  "InterfaceType": "Ethernet",
+                  "DetectedDeviceType": "Smartphone",
+                  "ActiveLastChange": "2024-01-18T12:38:30+0100",
+                  "UserFriendlyName": "MyPhone",
+                  "UserHostName": "MyPhone",
+                  "UserDeviceType": "MOBILE_PHONE",
+                  "Icon": "",
+                  "Room": "",
+                  "BlacklistEnable": true,
+                  "Blacklisted": false,
+                  "UnblockHoursCount": 0,
+                  "BlacklistStatus": false,
+                  "BlacklistedAccordingToSchedule": true,
+                  "BlacklistedSchedule": [],
+                  "Hidden": false,
+                  "Options": [],
+                  "VendorClassIDv6": "",
+                  "SysfsId": "",
+                  "IPv4Addresses": [],
+                  "IPv6Addresses": [],
+                  "DeviceTypeAssociation": "Device/DeviceDiscovery/DeviceIdentification/DHCPFingerprintDatabase/Entries/Entry[@uid='5']",
+                  "IPv6LeaseStart": 0,
+                  "IPv6LeaseDuration": 0,
+                  "IPv6LeaseTimeRemaining": 0,
+                  "IPv6ClientID": ""
+                },
+                {
+                  "uid": 2,
+                  "Alias": "cpe-2",
+                  "PhysAddress": "12:34:56:78:90:AB",
+                  "IPAddress": "",
+                  "AddressSource": "NONE",
+                  "DHCPClient": "",
+                  "LeaseTimeRemaining": 0,
+                  "AssociatedDevice": "",
+                  "RemoteAssociatedDevice": "",
+                  "Layer1Interface": "",
+                  "Layer3Interface": "",
+                  "VendorClassID": "",
+                  "ClientID": "",
+                  "UserClassID": "",
+                  "HostName": "",
+                  "Active": false,
+                  "LeaseStart": 0,
+                  "LeaseDuration": 0,
+                  "InterfaceType": "Ethernet",
+                  "DetectedDeviceType": "Smartphone",
+                  "ActiveLastChange": "2024-04-22T17:31:12+0100",
+                  "UserFriendlyName": "MyPhone",
+                    "UserHostName": "MyPhone",
+                  "UserDeviceType": "MOBILE_PHONE",
+                  "Icon": "",
+                  "Room": "",
+                  "BlacklistEnable": true,
+                  "Blacklisted": false,
+                  "UnblockHoursCount": 0,
+                  "BlacklistStatus": false,
+                  "BlacklistedAccordingToSchedule": true,
+                  "BlacklistedSchedule": [],
+                  "Hidden": false,
+                  "Options": [],
+                  "VendorClassIDv6": "",
+                  "SysfsId": "",
+                  "IPv4Addresses": [],
+                  "IPv6Addresses": [],
+                  "DeviceTypeAssociation": "Device/DeviceDiscovery/DeviceIdentification/DHCPFingerprintDatabase/Entries/Entry[@uid='4']",
+                  "IPv6LeaseStart": 0,
+                  "IPv6LeaseDuration": 0,
+                  "IPv6LeaseTimeRemaining": 0,
+                  "IPv6ClientID": ""
+                }
+              ]
+            }
+          }
+        ]
+      }
+    ]
+  }
+}

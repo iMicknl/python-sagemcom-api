@@ -1,0 +1,32 @@
+{
+  "reply": {
+    "uid": 0,
+    "id": 0,
+    "error": {
+      "code": 16777236,
+      "description": "XMO_REQUEST_ACTION_ERR"
+    },
+    "actions": [
+      {
+        "uid": 1,
+        "id": 0,
+        "error": {
+          "code": 16777223,
+          "description": "XMO_AUTHENTICATION_ERR"
+        },
+        "callbacks": [
+          {
+            "uid": 1,
+            "result": {
+              "code": 16777223,
+              "description": "XMO_AUTHENTICATION_ERR"
+            },
+            "xpath": "Device",
+            "parameters": {}
+          }
+        ]
+      }
+    ],
+    "events": []
+  }
+}
