@@ -1,0 +1,9 @@
+{
+  "reply": {
+    "error": {
+      "description": "XMO_INVALID_SESSION_ERR",
+      "info": "Invalid session"
+    },
+    "uid": 1
+  }
+}

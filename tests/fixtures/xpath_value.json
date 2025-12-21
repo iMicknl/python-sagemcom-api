@@ -1,0 +1,76 @@
+{
+  "reply": {
+    "uid": 0,
+    "id": 1,
+    "error": {
+      "code": 16777216,
+      "description": "XMO_REQUEST_NO_ERR"
+    },
+    "actions": [
+      {
+        "uid": 1,
+        "id": 0,
+        "error": {
+          "code": 16777238,
+          "description": "XMO_NO_ERR"
+        },
+        "callbacks": [
+          {
+            "uid": 1,
+            "result": {
+              "code": 16777238,
+              "description": "XMO_NO_ERR"
+            },
+            "xpath": "Device\/WiFi\/Radios\/Radio[@uid='1']\/Status",
+            "parameters": {
+              "value": "UP",
+              "capability": {
+                "name": "Status",
+                "type": "interface:Interface:Status xmo:int32 xmo:number xmo:value",
+                "flags": {
+                  "value": true,
+                  "status": true,
+                  "xml-child": true
+                },
+                "default-value": "DOWN",
+                "restrictions": {
+                  "enum-values": [
+                    {
+                      "name": "UP",
+                      "value": "0"
+                    },
+                    {
+                      "name": "DOWN",
+                      "value": "1"
+                    },
+                    {
+                      "name": "UNKNOWN",
+                      "value": "2"
+                    },
+                    {
+                      "name": "DORMANT",
+                      "value": "3"
+                    },
+                    {
+                      "name": "NOTPRESENT",
+                      "value": "4"
+                    },
+                    {
+                      "name": "LOWERLAYERDOWN",
+                      "value": "5"
+                    },
+                    {
+                      "name": "ERROR",
+                      "value": "6"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "events": []
+  }
+}

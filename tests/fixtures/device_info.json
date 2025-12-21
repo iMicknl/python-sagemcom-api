@@ -1,0 +1,993 @@
+{
+  "reply": {
+    "uid": 0,
+    "id": 1,
+    "error": {
+      "code": 16777216,
+      "description": "XMO_REQUEST_NO_ERR"
+    },
+    "actions": [
+      {
+        "uid": 1,
+        "id": 0,
+        "error": {
+          "code": 16777238,
+          "description": "XMO_NO_ERR"
+        },
+        "callbacks": [
+          {
+            "uid": 1,
+            "result": {
+              "code": 16777238,
+              "description": "XMO_NO_ERR"
+            },
+            "xpath": "Device\/DeviceInfo",
+            "parameters": {
+              "value": {
+                "DeviceInfo": {
+                  "DeviceCategory": "",
+                  "Manufacturer": "Sagemcom",
+                  "ManufacturerOUI": "3C585D",
+                  "ModelName": "FAST3896_CUSTOM",
+                  "ModelNumber": "FAST3896",
+                  "Description": "Wireless Voice Gateway <<HW_REV: V4.0; VENDOR: SAGEMCOM; BOOTR: v1.23_B1_v4.56; SW_REV: FAST3896_CUSTOM_sw12.34.56.78i-9; MODEL: FAST3896>>",
+                  "ProductClass": "FAST3896",
+                  "SerialNumber": "DM2229121000037",
+                  "HardwareVersion": "4.0",
+                  "SoftwareVersion": "FAST3896_CUSTOM_sw12.34.56.78i-9",
+                  "AdditionalHardwareVersion": "",
+                  "AdditionalSoftwareVersion": "",
+                  "ExternalFirmwareVersion": "FAST3896_CUSTOM_sw12.34.56.78i-9",
+                  "InternalFirmwareVersion": "sw12.34.56.78i-9",
+                  "GUIFirmwareVersion": "",
+                  "GUIAPIVersion": "1.23",
+                  "ProvisioningCode": "",
+                  "UpTime": 189629,
+                  "FirstUseDate": "2024-03-03T14: 16: 22+0100",
+                  "MACAddress": "01:23:45:67:89:AB",
+                  "Mode": "GW",
+                  "Country": "fr",
+                  "RebootCount": 59,
+                  "NodesToRestore": "",
+                  "VendorConfigFiles": [
+                    {
+                      "uid": 1,
+                      "Alias": "DEVICE_CONFIG",
+                      "Name": "device.cfg",
+                      "Version": "",
+                      "Date": "1-01-01T01: 00: 00+0100",
+                      "Description": "Gateway device configuration",
+                      "UseForBackupRestore": false
+                    }
+                  ],
+                  "MemoryStatus": {
+                    "Total": 231316,
+                    "Free": 59768,
+                    "FreeMemoryPercentage": 25
+                  },
+                  "ProcessStatus": {
+                    "CPUUsage": 0,
+                    "Processes": [],
+                    "LoadAverage": {
+                      "Load1": 0.072754,
+                      "Load5": 0.060059,
+                      "Load15": 0.068848
+                    }
+                  },
+                  "TemperatureStatus": {
+                    "TemperatureSensors": [
+                      {
+                        "uid": 1,
+                        "Alias": "mainSensor",
+                        "Enable": false,
+                        "Status": "DISABLED",
+                        "Reset": false,
+                        "ResetTime": "1-01-01T01: 00: 00+0100",
+                        "Name": "",
+                        "Value": 67,
+                        "LastUpdate": "1-01-01T01: 00: 00+0100",
+                        "MinValue": 0,
+                        "MinTime": "1-01-01T01: 00: 00+0100",
+                        "MaxValue": 0,
+                        "MaxTime": "1-01-01T01: 00: 00+0100",
+                        "LowAlarmValue": 0,
+                        "LowAlarmTime": "1-01-01T01: 00: 00+0100",
+                        "HighAlarmValue": 0,
+                        "PollingInterval": 0,
+                        "HighAlarmTime": "1-01-01T01: 00: 00+0100"
+                      },
+                      {
+                        "uid": 2,
+                        "Alias": "blvSensor1",
+                        "Enable": false,
+                        "Status": "DISABLED",
+                        "Reset": false,
+                        "ResetTime": "1-01-01T01: 00: 00+0100",
+                        "Name": "",
+                        "Value": 25,
+                        "LastUpdate": "1-01-01T01: 00: 00+0100",
+                        "MinValue": 0,
+                        "MinTime": "1-01-01T01: 00: 00+0100",
+                        "MaxValue": 0,
+                        "MaxTime": "1-01-01T01: 00: 00+0100",
+                        "LowAlarmValue": 0,
+                        "LowAlarmTime": "1-01-01T01: 00: 00+0100",
+                        "HighAlarmValue": 0,
+                        "PollingInterval": 0,
+                        "HighAlarmTime": "1-01-01T01: 00: 00+0100"
+                      },
+                      {
+                        "uid": 3,
+                        "Alias": "blvSensor2",
+                        "Enable": false,
+                        "Status": "DISABLED",
+                        "Reset": false,
+                        "ResetTime": "1-01-01T01: 00: 00+0100",
+                        "Name": "",
+                        "Value": 25,
+                        "LastUpdate": "1-01-01T01: 00: 00+0100",
+                        "MinValue": 0,
+                        "MinTime": "1-01-01T01: 00: 00+0100",
+                        "MaxValue": 0,
+                        "MaxTime": "1-01-01T01: 00: 00+0100",
+                        "LowAlarmValue": 0,
+                        "LowAlarmTime": "1-01-01T01: 00: 00+0100",
+                        "HighAlarmValue": 0,
+                        "PollingInterval": 0,
+                        "HighAlarmTime": "1-01-01T01: 00: 00+0100"
+                      },
+                      {
+                        "uid": 4,
+                        "Alias": "batSensor",
+                        "Enable": false,
+                        "Status": "DISABLED",
+                        "Reset": false,
+                        "ResetTime": "1-01-01T01: 00: 00+0100",
+                        "Name": "",
+                        "Value": 25,
+                        "LastUpdate": "1-01-01T01: 00: 00+0100",
+                        "MinValue": 0,
+                        "MinTime": "1-01-01T01: 00: 00+0100",
+                        "MaxValue": 0,
+                        "MaxTime": "1-01-01T01: 00: 00+0100",
+                        "LowAlarmValue": 0,
+                        "LowAlarmTime": "1-01-01T01: 00: 00+0100",
+                        "HighAlarmValue": 0,
+                        "PollingInterval": 0,
+                        "HighAlarmTime": "1-01-01T01: 00: 00+0100"
+                      },
+                      {
+                        "uid": 5,
+                        "Alias": "avgSensor",
+                        "Enable": false,
+                        "Status": "DISABLED",
+                        "Reset": false,
+                        "ResetTime": "1-01-01T01: 00: 00+0100",
+                        "Name": "",
+                        "Value": 25,
+                        "LastUpdate": "1-01-01T01: 00: 00+0100",
+                        "MinValue": 0,
+                        "MinTime": "1-01-01T01: 00: 00+0100",
+                        "MaxValue": 0,
+                        "MaxTime": "1-01-01T01: 00: 00+0100",
+                        "LowAlarmValue": 0,
+                        "LowAlarmTime": "1-01-01T01: 00: 00+0100",
+                        "HighAlarmValue": 0,
+                        "PollingInterval": 0,
+                        "HighAlarmTime": "1-01-01T01: 00: 00+0100"
+                      }
+                    ]
+                  },
+                  "NetworkProperties": {
+                    "MaxTCPWindowSize": 0,
+                    "TCPImplementation": ""
+                  },
+                  "SupportedDataModels": [
+                    {
+                      "uid": 1,
+                      "URL": "http:\/\/192.168.1.1\/datamodels\/cpe-dti-tr104.xml",
+                      "UUID": "",
+                      "URN": "urn:broadband-forum-org:tr-104-1-0-0",
+                      "Features": "X_VoIP",
+                      "Alias": "cpe-1"
+                    },
+                    {
+                      "uid": 2,
+                      "URL": "http:\/\/192.168.1.1\/datamodels\/cpe-dti-tr140.xml",
+                      "UUID": "",
+                      "URN": "urn:broadband-forum-org:tr-140-1-1-0",
+                      "Features": "X_NAS",
+                      "Alias": "cpe-2"
+                    },
+                    {
+                      "uid": 3,
+                      "URL": "http:\/\/192.168.1.1\/datamodels\/cpe-dti-tr181.xml",
+                      "UUID": "",
+                      "URN": "urn:broadband-forum-org:tr-181-2-2-0",
+                      "Features": "DNSClient,DNSServer,Firewall,IPv6,NAT,Router",
+                      "Alias": "cpe-3"
+                    }
+                  ],
+                  "RouterName": "Telekom-123456-2.4GHz",
+                  "RebootStatus": 0.000000,
+                  "ResetStatus": 0.000000,
+                  "UpdateStatus": 0.000000,
+                  "SNMP": false,
+                  "FirstConnection": false,
+                  "SimpleLogs": {
+                    "SystemLog": "",
+                    "FirewallLog": "",
+                    "CallLog": ""
+                  },
+                  "BuildDate": "2020-01-01T01: 01: 13+0100",
+                  "SpecVersion": "1.0",
+                  "CLID": "",
+                  "FlushDeviceLog": false,
+                  "Processors": [
+                    {
+                      "uid": 1,
+                      "Alias": "CPU1",
+                      "Architecture": "ARM"
+                    },
+                    {
+                      "uid": 2,
+                      "Alias": "CPU2",
+                      "Architecture": "ARM"
+                    }
+                  ],
+                  "VendorLogFiles": [
+                    {
+                      "uid": 1,
+                      "Alias": "OPERATOR_LOG",
+                      "Name": "",
+                      "MaximumSize": 0,
+                      "Persistent": false,
+                      "LogData": "",
+                      "DiagnosticState": "NONE"
+                    }
+                  ],
+                  "ProxierInfo": {
+                    "ManufacturerOUI": "",
+                    "ProductClass": "",
+                    "SerialNumber": "",
+                    "ProxyProtocol": ""
+                  },
+                  "Locations": [],
+                  "APIVersion": "",
+                  "Logging": {
+                    "LogLevel": "Informational",
+                    "Syslog": {
+                      "Enable": true,
+                      "Server": {
+                        "Enable": false,
+                        "IPv4Address": "192.168.1.2",
+                        "Port": 514,
+                        "SyslogConfig": "",
+                        "LoggerCategories": "",
+                        "LoggerExcludedCategories": "",
+                        "SourceIndex": 1
+                      },
+                      "Destinations": [
+                        {
+                          "uid": 1,
+                          "Alias": "RAM",
+                          "Enable": true,
+                          "Status": "RUNNING",
+                          "LogSize": 1048576,
+                          "SyslogConfig": "",
+                          "LoggerCategories": "",
+                          "LoggerExcludedCategories": "",
+                          "FileStorageLocation": "\/var\/log\/messages",
+                          "SourceIndex": 1
+                        }
+                      ],
+                      "Sources": [
+                        {
+                          "uid": 1,
+                          "Alias": "Log_source",
+                          "Enable": true,
+                          "KernelSource": true,
+                          "InternalSource": true,
+                          "UnixStream": true,
+                          "FileSourceLocation": "",
+                          "Network": {
+                            "Enable": false,
+                            "Protocol": "",
+                            "Port": 0
+                          }
+                        }
+                      ]
+                    },
+                    "ResetLogOper": false
+                  },
+                  "BackupTimeStamp": "1-01-01T01: 00: 00+0100",
+                  "ConfigBackupRestoreEnable": false,
+                  "LastBackupDate": "1-01-01T01: 00: 00+0100",
+                  "LastRestoreDate": "1-01-01T01: 00: 00+0100",
+                  "EventLog": "",
+                  "BackupSoftwareVersion": "",
+                  "BootloaderVersion": "v1.23_B1_v4.56",
+                  "FlashMemoryStatus": {
+                    "Total": 0,
+                    "Free": 0
+                  },
+                  "CustomerModelName": "",
+                  "UserConfigFiles": []
+                }
+              },
+              "capability": {
+                "name": "DeviceInfo",
+                "type": "devinfo:DeviceInfo xmo:extended-node xmo:child-node xmo:node",
+                "flags": {
+                  "node": true,
+                  "config": true,
+                  "capability": true,
+                  "xml-child": true,
+                  "has-dynamic-extension": true
+                },
+                "interfaces": [
+                  {
+                    "name": "UserBackupRestoreInterface",
+                    "major-version": "1",
+                    "minor-version": "0",
+                    "commands": [
+                      {
+                        "name": "CreateUserBackup"
+                      },
+                      {
+                        "name": "RestoreUserBackup",
+                        "input-parameters": [
+                          {
+                            "name": "Index",
+                            "type": "RestoreUserBackup:Index xmo:uint32 xmo:number xmo:value",
+                            "flags": {
+                              "value": true,
+                              "config": true,
+                              "xml-child": true
+                            }
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                ],
+                "attributes": [
+                  {
+                    "name": "DeviceCategory",
+                    "type": "devinfo:DeviceInfo:DeviceCategory xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "status": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "Manufacturer",
+                    "type": "devinfo:DeviceInfo:Manufacturer xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "max-length": 64
+                    }
+                  },
+                  {
+                    "name": "ManufacturerOUI",
+                    "type": "devinfo:DeviceInfo:ManufacturerOUI xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {}
+                  },
+                  {
+                    "name": "ModelName",
+                    "type": "devinfo:DeviceInfo:ModelName xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "max-length": 64
+                    }
+                  },
+                  {
+                    "name": "ModelNumber",
+                    "type": "devinfo:DeviceInfo:ModelNumber xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "status": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "max-length": 64
+                    }
+                  },
+                  {
+                    "name": "Description",
+                    "type": "devinfo:DeviceInfo:Description xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "max-length": 256
+                    }
+                  },
+                  {
+                    "name": "ProductClass",
+                    "type": "devinfo:DeviceInfo:ProductClass xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "max-length": 64
+                    }
+                  },
+                  {
+                    "name": "SerialNumber",
+                    "type": "devinfo:DeviceInfo:SerialNumber xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "max-length": 64
+                    }
+                  },
+                  {
+                    "name": "HardwareVersion",
+                    "type": "devinfo:DeviceInfo:HardwareVersion xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "max-length": 64
+                    }
+                  },
+                  {
+                    "name": "SoftwareVersion",
+                    "type": "devinfo:DeviceInfo:SoftwareVersion xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "status": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "max-length": 64
+                    }
+                  },
+                  {
+                    "name": "AdditionalHardwareVersion",
+                    "type": "devinfo:DeviceInfo:AdditionalHardwareVersion xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "max-length": 64
+                    }
+                  },
+                  {
+                    "name": "AdditionalSoftwareVersion",
+                    "type": "devinfo:DeviceInfo:AdditionalSoftwareVersion xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "max-length": 64
+                    }
+                  },
+                  {
+                    "name": "ExternalFirmwareVersion",
+                    "type": "devinfo:DeviceInfo:ExternalFirmwareVersion xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "status": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "max-length": 64
+                    }
+                  },
+                  {
+                    "name": "InternalFirmwareVersion",
+                    "type": "devinfo:DeviceInfo:InternalFirmwareVersion xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "status": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "max-length": 64
+                    }
+                  },
+                  {
+                    "name": "GUIFirmwareVersion",
+                    "type": "devinfo:DeviceInfo:GUIFirmwareVersion xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "status": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "max-length": 64
+                    }
+                  },
+                  {
+                    "name": "GUIAPIVersion",
+                    "type": "devinfo:DeviceInfo:GUIAPIVersion xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "status": true,
+                      "xml-child": true
+                    },
+                    "default-value": "2.92",
+                    "restrictions": {
+                      "max-length": 64
+                    }
+                  },
+                  {
+                    "name": "ProvisioningCode",
+                    "type": "devinfo:DeviceInfo:ProvisioningCode xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "max-length": 64
+                    }
+                  },
+                  {
+                    "name": "UpTime",
+                    "type": "xmo:uint32 xmo:number xmo:value",
+                    "flags": {
+                      "value": true,
+                      "statistic": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "FirstUseDate",
+                    "type": "xmo:time xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "MACAddress",
+                    "type": "devinfo:DeviceInfo:MACAddress xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "status": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "max-length": 64
+                    }
+                  },
+                  {
+                    "name": "Mode",
+                    "type": "devinfo:DeviceInfo:Mode xmo:int32 xmo:number xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "enum-values": [
+                        {
+                          "name": "GW",
+                          "value": "0"
+                        },
+                        {
+                          "name": "GWC",
+                          "value": "1"
+                        },
+                        {
+                          "name": "AP",
+                          "value": "2"
+                        }
+                      ]
+                    }
+                  },
+                  {
+                    "name": "Country",
+                    "type": "devinfo:DeviceInfo:Country xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "default-value": "fr",
+                    "restrictions": {
+                      "min-length": 2,
+                      "max-length": 64
+                    }
+                  },
+                  {
+                    "name": "RebootCount",
+                    "type": "xmo:uint32 xmo:number xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "NodesToRestore",
+                    "type": "xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "VendorConfigFiles",
+                    "type": "devinfo:DeviceInfo:VendorConfigFiles xmo:list xmo:container",
+                    "flags": {
+                      "list": true,
+                      "config": true,
+                      "xml-child": true,
+                      "has-dynamic-extension": true
+                    },
+                    "children": []
+                  },
+                  {
+                    "name": "MemoryStatus",
+                    "type": "devinfo:DeviceInfo:MemoryStatus xmo:extended-node xmo:child-node xmo:node",
+                    "flags": {
+                      "node": true,
+                      "status": true,
+                      "capability": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "ProcessStatus",
+                    "type": "devinfo:DeviceInfo:ProcessStatus xmo:extended-node xmo:child-node xmo:node",
+                    "flags": {
+                      "node": true,
+                      "status": true,
+                      "capability": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "TemperatureStatus",
+                    "type": "devinfo:DeviceInfo:TemperatureStatus xmo:extended-node xmo:child-node xmo:node",
+                    "flags": {
+                      "node": true,
+                      "config": true,
+                      "capability": true,
+                      "xml-child": true,
+                      "has-dynamic-extension": true
+                    }
+                  },
+                  {
+                    "name": "NetworkProperties",
+                    "type": "devinfo:NetworkProperties xmo:extended-node xmo:child-node xmo:node",
+                    "flags": {
+                      "node": true,
+                      "config": true,
+                      "capability": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "SupportedDataModels",
+                    "type": "devinfo:DeviceInfo:SupportedDataModels xmo:list xmo:container",
+                    "flags": {
+                      "list": true,
+                      "status": true,
+                      "xml-child": true
+                    },
+                    "children": []
+                  },
+                  {
+                    "name": "RouterName",
+                    "type": "devinfo:DeviceInfo:RouterName xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "max-length": 32
+                    }
+                  },
+                  {
+                    "name": "RebootStatus",
+                    "type": "devinfo:DeviceInfo:RebootStatus xmo:float xmo:number xmo:value",
+                    "flags": {
+                      "value": true,
+                      "statistic": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "min-value-inclusive": 0,
+                      "max-value-inclusive": 1
+                    }
+                  },
+                  {
+                    "name": "ResetStatus",
+                    "type": "devinfo:DeviceInfo:ResetStatus xmo:float xmo:number xmo:value",
+                    "flags": {
+                      "value": true,
+                      "statistic": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "min-value-inclusive": 0,
+                      "max-value-inclusive": 1
+                    }
+                  },
+                  {
+                    "name": "UpdateStatus",
+                    "type": "devinfo:DeviceInfo:UpdateStatus xmo:float xmo:number xmo:value",
+                    "flags": {
+                      "value": true,
+                      "statistic": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "min-value-inclusive": 0,
+                      "max-value-inclusive": 1
+                    }
+                  },
+                  {
+                    "name": "SNMP",
+                    "type": "xmo:boolean xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "default-value": "false"
+                  },
+                  {
+                    "name": "FirstConnection",
+                    "type": "xmo:boolean xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "default-value": "true"
+                  },
+                  {
+                    "name": "SimpleLogs",
+                    "type": "devinfo:SimpleLogs xmo:extended-node xmo:child-node xmo:node",
+                    "flags": {
+                      "node": true,
+                      "config": true,
+                      "capability": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "BuildDate",
+                    "type": "xmo:time xmo:value",
+                    "flags": {
+                      "value": true,
+                      "status": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "SpecVersion",
+                    "type": "devinfo:DeviceInfo:SpecVersion xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "default-value": "1.0",
+                    "restrictions": {
+                      "max-length": 32
+                    }
+                  },
+                  {
+                    "name": "CLID",
+                    "type": "devinfo:DeviceInfo:CLID xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "FlushDeviceLog",
+                    "type": "devinfo:DeviceInfo:FlushDeviceLog xmo:boolean xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "default-value": "false"
+                  },
+                  {
+                    "name": "Processors",
+                    "type": "devinfo:DeviceInfo:Processors xmo:list xmo:container",
+                    "flags": {
+                      "list": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "children": []
+                  },
+                  {
+                    "name": "VendorLogFiles",
+                    "type": "devinfo:DeviceInfo:VendorLogFiles xmo:list xmo:container",
+                    "flags": {
+                      "list": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "children": []
+                  },
+                  {
+                    "name": "ProxierInfo",
+                    "type": "devinfo:DeviceInfo:ProxierInfo xmo:extended-node xmo:child-node xmo:node",
+                    "flags": {
+                      "node": true,
+                      "config": true,
+                      "capability": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "Locations",
+                    "type": "devinfo:DeviceInfo:Locations xmo:list xmo:container",
+                    "flags": {
+                      "list": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "children": []
+                  },
+                  {
+                    "name": "APIVersion",
+                    "type": "devinfo:DeviceInfo:APIVersion xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "max-length": 5
+                    }
+                  },
+                  {
+                    "name": "Logging",
+                    "type": "devinfo:Logging xmo:extended-node xmo:child-node xmo:node",
+                    "flags": {
+                      "node": true,
+                      "config": true,
+                      "capability": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "BackupTimeStamp",
+                    "type": "xmo:time xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "ConfigBackupRestoreEnable",
+                    "type": "xmo:boolean xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "default-value": "false"
+                  },
+                  {
+                    "name": "LastBackupDate",
+                    "type": "xmo:time xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "LastRestoreDate",
+                    "type": "xmo:time xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "EventLog",
+                    "type": "xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "status": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "BackupSoftwareVersion",
+                    "type": "xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "status": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "BootloaderVersion",
+                    "type": "xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "status": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "FlashMemoryStatus",
+                    "type": "devinfo:DeviceInfo:FlashMemoryStatus xmo:extended-node xmo:child-node xmo:node",
+                    "flags": {
+                      "node": true,
+                      "status": true,
+                      "capability": true,
+                      "xml-child": true
+                    }
+                  },
+                  {
+                    "name": "CustomerModelName",
+                    "type": "devinfo:DeviceInfo:CustomerModelName xmo:str xmo:value",
+                    "flags": {
+                      "value": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "restrictions": {
+                      "max-length": 64
+                    }
+                  },
+                  {
+                    "name": "UserConfigFiles",
+                    "type": "devinfo:DeviceInfo:UserConfigFiles xmo:list xmo:container",
+                    "flags": {
+                      "list": true,
+                      "config": true,
+                      "xml-child": true
+                    },
+                    "children": []
+                  }
+                ]
+              }
+            }
+          }
+        ]
+      }
+    ],
+    "events": []
+  }
+}
