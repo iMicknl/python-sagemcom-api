@@ -22,33 +22,25 @@ from aiohttp import (
 )
 import backoff
 import humps
+from .action_error_exception_handler import ActionErrorHandler
 
 from .const import (
     API_ENDPOINT,
     DEFAULT_TIMEOUT,
     DEFAULT_USER_AGENT,
     UINT_MAX,
-    XMO_ACCESS_RESTRICTION_ERR,
-    XMO_AUTHENTICATION_ERR,
     XMO_INVALID_SESSION_ERR,
-    XMO_LOGIN_RETRY_ERR,
-    XMO_MAX_SESSION_COUNT_ERR,
     XMO_NO_ERR,
-    XMO_NON_WRITABLE_PARAMETER_ERR,
     XMO_REQUEST_ACTION_ERR,
     XMO_REQUEST_NO_ERR,
-    XMO_UNKNOWN_PATH_ERR,
 )
 from .enums import EncryptionMethod
 from .exceptions import (
-    AccessRestrictionException,
     AuthenticationException,
     BadRequestException,
     InvalidSessionException,
     LoginRetryErrorException,
     LoginTimeoutException,
-    MaximumSessionCountException,
-    NonWritableParameterException,
     UnauthorizedException,
     UnknownException,
     UnknownPathException,
@@ -201,8 +193,19 @@ class SagemcomClient:
 
         return value
 
-    def __get_response_value(self, response, index=0):
+    def __get_response_value(self, response, index=0, throw_on_action_error = False):
         """Retrieve response value from value."""
+        if throw_on_action_error:
+            try:
+                error = response["reply"]["actions"][index]["error"]
+            except (KeyError, IndexError):
+                error = None
+
+            if error is not None:
+                error_description = error["description"]
+                if error_description != XMO_NO_ERR:
+                    raise ActionErrorHandler.from_error_description(error, error_description)
+
         try:
             value = self.__get_response(response, index)["value"]
         except KeyError:
@@ -251,37 +254,10 @@ class SagemcomClient:
                 self._request_id = -1
                 raise InvalidSessionException(error)
 
-            # Error in one of the actions
+            # Unknown error in one of the actions
             if error["description"] == XMO_REQUEST_ACTION_ERR:
-                # pylint:disable=fixme
-                # TODO How to support multiple actions + error handling?
-                actions = result["reply"]["actions"]
-                for action in actions:
-                    action_error = action["error"]
-                    action_error_desc = action_error["description"]
-
-                    if action_error_desc == XMO_NO_ERR:
-                        continue
-
-                    if action_error_desc == XMO_AUTHENTICATION_ERR:
-                        raise AuthenticationException(action_error)
-
-                    if action_error_desc == XMO_ACCESS_RESTRICTION_ERR:
-                        raise AccessRestrictionException(action_error)
-
-                    if action_error_desc == XMO_NON_WRITABLE_PARAMETER_ERR:
-                        raise NonWritableParameterException(action_error)
-
-                    if action_error_desc == XMO_UNKNOWN_PATH_ERR:
-                        raise UnknownPathException(action_error)
-
-                    if action_error_desc == XMO_MAX_SESSION_COUNT_ERR:
-                        raise MaximumSessionCountException(action_error)
-
-                    if action_error_desc == XMO_LOGIN_RETRY_ERR:
-                        raise LoginRetryErrorException(action_error)
-
-                    raise UnknownException(action_error)
+                # leave this to the layer above as there may be multiple actions
+                pass
 
             return result
 
@@ -344,6 +320,8 @@ class SagemcomClient:
 
         try:
             response = await self.__api_request_async([actions], True)
+            ActionErrorHandler.throw_if(response)
+
         except asyncio.TimeoutError as exception:
             raise LoginTimeoutException(
                 "Login request timed-out. This could be caused by using the wrong encryption method, or using a (non) SSL connection."
@@ -362,7 +340,8 @@ class SagemcomClient:
         """Log out of the Sagemcom F@st device."""
         actions = {"id": 0, "method": "logOut"}
 
-        await self.__api_request_async([actions], False)
+        response = await self.__api_request_async([actions], False)
+        ActionErrorHandler.throw_if(response)
 
         self._session_id = -1
         self._server_nonce = ""
@@ -404,7 +383,7 @@ class SagemcomClient:
         max_tries=1,
         on_backoff=retry_login,
     )
-    async def get_value_by_xpath(self, xpath: str, options: dict | None = None) -> dict:
+    async def get_value_by_xpath(self, xpath: str, options: dict | None = None, suppress_action_errors = False) -> dict:
         """
         Retrieve raw value from router using XPath.
 
@@ -419,6 +398,9 @@ class SagemcomClient:
         }
 
         response = await self.__api_request_async([actions], False)
+        if not suppress_action_errors:
+            ActionErrorHandler.throw_if(response)
+
         data = self.__get_response_value(response)
 
         return data
@@ -434,7 +416,7 @@ class SagemcomClient:
         max_tries=1,
         on_backoff=retry_login,
     )
-    async def get_values_by_xpaths(self, xpaths, options: dict | None = None) -> dict:
+    async def get_values_by_xpaths(self, xpaths, options: dict | None = None, suppress_action_errors = False) -> dict:
         """
         Retrieve raw values from router using XPath.
 
@@ -452,6 +434,9 @@ class SagemcomClient:
         ]
 
         response = await self.__api_request_async(actions, False)
+        if not suppress_action_errors:
+            ActionErrorHandler.throw_if(response)
+
         values = [self.__get_response_value(response, i) for i in range(len(xpaths))]
         data = dict(zip(xpaths.keys(), values))
 
@@ -487,6 +472,7 @@ class SagemcomClient:
         }
 
         response = await self.__api_request_async([actions], False)
+        ActionErrorHandler.throw_if(response)
 
         return response
 
@@ -515,7 +501,9 @@ class SagemcomClient:
                     "product_class": "Device/DeviceInfo/ProductClass",
                     "serial_number": "Device/DeviceInfo/SerialNumber",
                     "software_version": "Device/DeviceInfo/SoftwareVersion",
-                }
+                },
+                # missing values converted to empty string
+                suppress_action_errors=True
             )
             data["manufacturer"] = "Sagemcom"
 
@@ -584,6 +572,8 @@ class SagemcomClient:
         }
 
         response = await self.__api_request_async([action], False)
+        ActionErrorHandler.throw_if(response)
+
         data = self.__get_response_value(response)
 
         return data
