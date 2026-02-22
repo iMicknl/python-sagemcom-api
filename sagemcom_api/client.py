@@ -17,6 +17,7 @@ from aiohttp import (
     ClientOSError,
     ClientSession,
     ClientTimeout,
+    ContentTypeError,
     ServerDisconnectedError,
     TCPConnector,
 )
@@ -39,7 +40,7 @@ from .const import (
     XMO_REQUEST_NO_ERR,
     XMO_UNKNOWN_PATH_ERR,
 )
-from .enums import EncryptionMethod
+from .enums import ApiMode, EncryptionMethod
 from .exceptions import (
     AccessRestrictionException,
     AuthenticationException,
@@ -75,6 +76,7 @@ class SagemcomClient:
         username: str,
         password: str,
         authentication_method: EncryptionMethod | None = None,
+        api_mode: ApiMode | str = ApiMode.AUTO,
         session: ClientSession | None = None,
         ssl: bool | None = False,
         verify_ssl: bool | None = True,
@@ -86,11 +88,16 @@ class SagemcomClient:
         :param username: the username for your Sagemcom router
         :param password: the password for your Sagemcom router
         :param authentication_method: the auth method of your Sagemcom router
+        :param api_mode: one of auto, legacy or rest
         :param session: use a custom session, for example to configure the timeout
         """
         self.host = host
         self.username = username
         self.authentication_method = authentication_method
+        self.api_mode = ApiMode(api_mode)
+        self._active_api_mode: ApiMode = (
+            self.api_mode if self.api_mode != ApiMode.AUTO else ApiMode.LEGACY
+        )
         self.password = password
         self._current_nonce = None
         self._password_hash = self.__generate_hash(password)
@@ -111,6 +118,11 @@ class SagemcomClient:
                 ),
             )
         )
+
+    @property
+    def active_api_mode(self) -> ApiMode:
+        """Return the API mode that is currently active."""
+        return self._active_api_mode
 
     async def __aenter__(self) -> SagemcomClient:
         """TODO."""
@@ -315,8 +327,8 @@ class SagemcomClient:
         ) as exception:
             raise ConnectionError(str(exception)) from exception
 
-    async def login(self):
-        """Login to the SagemCom F@st router using a username and password."""
+    async def __legacy_login(self):
+        """Login to the legacy JSON-REQ API."""
 
         actions = {
             "id": 0,
@@ -358,18 +370,108 @@ class SagemcomClient:
 
         raise UnauthorizedException(data)
 
+    @backoff.on_exception(
+        backoff.expo,
+        (ClientConnectorError, ClientOSError, ServerDisconnectedError),
+        max_tries=5,
+    )
+    async def __rest_request(
+        self, method: str, endpoint: str, data: dict[str, Any] | None = None
+    ):
+        """Call the REST API using form-encoded payloads."""
+        url = f"{self.protocol}://{self.host}{endpoint}"
+        payload = urllib.parse.urlencode(data or {})
+        request_headers = {"Content-Type": "application/x-www-form-urlencoded"}
+
+        async with self.session.request(
+            method, url, data=payload, headers=request_headers
+        ) as response:
+            if response.status in (200, 204):
+                if response.status == 204:
+                    return None
+                try:
+                    return await response.json()
+                except (json.JSONDecodeError, ContentTypeError):
+                    return await response.text()
+
+            result = await response.text()
+            if response.status in (401, 403):
+                raise UnauthorizedException(result)
+
+            if response.status == 404:
+                raise UnsupportedHostException(result)
+
+            if response.status == 400:
+                raise AuthenticationException(result)
+
+            raise UnknownException(result)
+
+    async def __rest_login(self):
+        """Login to routers exposing the newer REST API."""
+        await self.__rest_request(
+            "POST",
+            "/api/v1/login",
+            data={"login": self.username, "password": self.password},
+        )
+        return True
+
+    def __should_fallback_to_rest(self, exception: Exception) -> bool:
+        """Return True when legacy API failure indicates a REST-only router."""
+        if isinstance(exception, UnsupportedHostException):
+            return True
+
+        if isinstance(exception, (UnknownException, BadRequestException)):
+            content = str(exception).lower()
+            return "service unavailable" in content or "<html" in content
+
+        return False
+
+    async def login(self):
+        """Login to the router using configured API mode."""
+        if self.api_mode == ApiMode.REST:
+            self._active_api_mode = ApiMode.REST
+            return await self.__rest_login()
+
+        if self.api_mode == ApiMode.LEGACY:
+            self._active_api_mode = ApiMode.LEGACY
+            return await self.__legacy_login()
+
+        # Auto-detect mode: try legacy first, then fall back to REST for newer firmwares.
+        try:
+            self._active_api_mode = ApiMode.LEGACY
+            return await self.__legacy_login()
+        except Exception as exception:  # pylint: disable=broad-except
+            if not self.__should_fallback_to_rest(exception):
+                raise
+
+            self._active_api_mode = ApiMode.REST
+            return await self.__rest_login()
+
     async def logout(self):
         """Log out of the Sagemcom F@st device."""
-        actions = {"id": 0, "method": "logOut"}
-
-        await self.__api_request_async([actions], False)
+        if self._active_api_mode == ApiMode.REST:
+            await self.__rest_request("POST", "/api/v1/logout")
+        else:
+            actions = {"id": 0, "method": "logOut"}
+            await self.__api_request_async([actions], False)
 
         self._session_id = -1
         self._server_nonce = ""
         self._request_id = -1
 
+    def __ensure_legacy_api(self):
+        """Raise when a method is only available on legacy JSON-REQ API."""
+        if self._active_api_mode == ApiMode.REST:
+            raise NotImplementedError(
+                "This method is not available with REST API mode. "
+                "Use helper methods supported for REST firmware instead."
+            )
+
     async def get_encryption_method(self):
         """Determine which encryption method to use for authentication and set it directly."""
+        if self.api_mode == ApiMode.REST:
+            return None
+
         for encryption_method in EncryptionMethod:
             try:
                 self.authentication_method = encryption_method
@@ -411,6 +513,8 @@ class SagemcomClient:
         :param xpath: path expression
         :param options: optional options
         """
+        self.__ensure_legacy_api()
+
         actions = {
             "id": 0,
             "method": "getValue",
@@ -441,6 +545,8 @@ class SagemcomClient:
         :param xpaths: Dict of key to xpath expression
         :param options: optional options
         """
+        self.__ensure_legacy_api()
+
         actions = [
             {
                 "id": i,
@@ -478,6 +584,8 @@ class SagemcomClient:
         :param value: value
         :param options: optional options
         """
+        self.__ensure_legacy_api()
+
         actions = {
             "id": 0,
             "method": "setValue",
@@ -503,6 +611,26 @@ class SagemcomClient:
     )
     async def get_device_info(self) -> DeviceInfo:
         """Retrieve information about Sagemcom F@st device."""
+        if self._active_api_mode == ApiMode.REST:
+            data = await self.__rest_request("GET", "/api/v1/device")
+            if not data or not isinstance(data, list):
+                raise UnknownException("Invalid response from /api/v1/device")
+
+            device = data[0].get("device", {})
+            return DeviceInfo(
+                mac_address=device.get("wan_mac_address"),
+                serial_number=device.get("serialnumber"),
+                model_name=device.get("modelname"),
+                model_number=device.get("modelname"),
+                product_class=device.get("modelname"),
+                software_version=device.get("running", {}).get("version"),
+                hardware_version=device.get("hardware_version"),
+                manufacturer="Sagemcom",
+                up_time=device.get("uptime"),
+                first_use_date=device.get("firstusedate"),
+                reboot_count=device.get("numberofboots"),
+            )
+
         try:
             data = await self.get_value_by_xpath("Device/DeviceInfo")
             return DeviceInfo(**data["device_info"])
@@ -534,6 +662,47 @@ class SagemcomClient:
     )
     async def get_hosts(self, only_active: bool | None = False) -> list[Device]:
         """Retrieve hosts connected to Sagemcom F@st device."""
+        if self._active_api_mode == ApiMode.REST:
+            data = await self.__rest_request("GET", "/api/v1/home")
+            if not data or not isinstance(data, list):
+                raise UnknownException("Invalid response from /api/v1/home")
+
+            home = data[0]
+            devices: list[Device] = []
+
+            for entry in home.get("wirelessListDevice", []):
+                devices.append(
+                    Device(
+                        uid=entry.get("id"),
+                        phys_address=entry.get("macAddress"),
+                        ip_address=entry.get("ipAddress"),
+                        host_name=entry.get("hostname"),
+                        user_host_name=entry.get("friendlyname"),
+                        active=entry.get("active", True),
+                        interface_type="wifi",
+                        detected_device_type=entry.get("devicetype"),
+                    )
+                )
+
+            for entry in home.get("ethernetListDevice", []):
+                devices.append(
+                    Device(
+                        uid=entry.get("id"),
+                        phys_address=entry.get("macAddress"),
+                        ip_address=entry.get("ipAddress"),
+                        host_name=entry.get("hostname"),
+                        user_host_name=entry.get("friendlyname"),
+                        active=entry.get("active", True),
+                        interface_type="ethernet",
+                        detected_device_type=entry.get("devicetype"),
+                    )
+                )
+
+            if only_active:
+                return [d for d in devices if d.active is True]
+
+            return devices
+
         data = await self.get_value_by_xpath(
             "Device/Hosts/Hosts", options={"capability-flags": {"interface": True}}
         )
@@ -558,6 +727,7 @@ class SagemcomClient:
     )
     async def get_port_mappings(self) -> list[PortMapping]:
         """Retrieve configured Port Mappings on Sagemcom F@st device."""
+        self.__ensure_legacy_api()
         data = await self.get_value_by_xpath("Device/NAT/PortMappings")
         port_mappings = [PortMapping(**p) for p in data]
 
@@ -576,6 +746,7 @@ class SagemcomClient:
     )
     async def reboot(self):
         """Reboot Sagemcom F@st device."""
+        self.__ensure_legacy_api()
         action = {
             "id": 0,
             "method": "reboot",
