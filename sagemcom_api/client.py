@@ -415,6 +415,116 @@ class SagemcomClient:
         )
         return True
 
+    @staticmethod
+    def __first_value(data: dict[str, Any], *keys: str) -> Any:
+        """Return the first non-None value from data for the given keys."""
+        for key in keys:
+            if key in data and data[key] is not None:
+                return data[key]
+        return None
+
+    @staticmethod
+    def __to_bool(value: Any, default: bool = True) -> bool:
+        """Convert mixed payload boolean values to bool."""
+        if value is None:
+            return default
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return bool(value)
+        if isinstance(value, str):
+            return value.strip().lower() in ("1", "true", "yes", "on", "up")
+        return default
+
+    def __build_rest_device(
+        self, entry: dict[str, Any], interface_type: str | None
+    ) -> Device:
+        """Map a REST host entry to Device."""
+        detected_interface = self.__first_value(
+            entry,
+            "interface_type",
+            "interfaceType",
+            "interface",
+            "connectionType",
+            "connection_type",
+            "type",
+        )
+        if interface_type is None and isinstance(detected_interface, str):
+            normalized = detected_interface.lower()
+            if "wifi" in normalized or "wireless" in normalized or "wlan" in normalized:
+                interface_type = "wifi"
+            elif "ethernet" in normalized or "eth" in normalized or "lan" in normalized:
+                interface_type = "ethernet"
+            else:
+                interface_type = detected_interface
+
+        return Device(
+            uid=self.__first_value(entry, "id", "uid"),
+            phys_address=self.__first_value(
+                entry, "macAddress", "mac_address", "phys_address"
+            ),
+            ip_address=self.__first_value(entry, "ipAddress", "ip_address"),
+            host_name=self.__first_value(entry, "hostname", "host_name", "name"),
+            user_host_name=self.__first_value(
+                entry, "friendlyname", "friendly_name", "user_host_name"
+            ),
+            active=self.__to_bool(
+                self.__first_value(entry, "active", "isActive"), True
+            ),
+            interface_type=interface_type,
+            detected_device_type=self.__first_value(
+                entry, "devicetype", "deviceType", "detected_device_type"
+            ),
+        )
+
+    def __extract_rest_home_hosts(self, data: Any) -> list[Device]:
+        """Parse /api/v1/home hosts payload."""
+        if isinstance(data, list):
+            if not data:
+                return []
+            home = data[0]
+        elif isinstance(data, dict):
+            home = data
+        else:
+            raise UnknownException("Invalid response from /api/v1/home")
+
+        if not isinstance(home, dict):
+            raise UnknownException("Invalid response from /api/v1/home")
+
+        devices: list[Device] = []
+        for entry in home.get("wirelessListDevice", []):
+            if isinstance(entry, dict):
+                devices.append(self.__build_rest_device(entry, "wifi"))
+
+        for entry in home.get("ethernetListDevice", []):
+            if isinstance(entry, dict):
+                devices.append(self.__build_rest_device(entry, "ethernet"))
+
+        return devices
+
+    def __extract_rest_hosts(self, data: Any) -> list[Device]:
+        """Parse /api/v1/hosts payload."""
+        hosts: list[dict[str, Any]]
+        if isinstance(data, list):
+            hosts = [entry for entry in data if isinstance(entry, dict)]
+        elif isinstance(data, dict):
+            raw_hosts = self.__first_value(
+                data,
+                "hosts",
+                "Hosts",
+                "list",
+                "listDevice",
+                "list_device",
+                "devices",
+            )
+            if not isinstance(raw_hosts, list):
+                raise UnknownException("Invalid response from /api/v1/hosts")
+            hosts = [entry for entry in raw_hosts if isinstance(entry, dict)]
+        else:
+            raise UnknownException("Invalid response from /api/v1/hosts")
+
+        return [self.__build_rest_device(entry, None) for entry in hosts]
+
     def __should_fallback_to_rest(self, exception: Exception) -> bool:
         """Return True when legacy API failure indicates a REST-only router."""
         if isinstance(exception, UnsupportedHostException):
@@ -663,40 +773,23 @@ class SagemcomClient:
     async def get_hosts(self, only_active: bool | None = False) -> list[Device]:
         """Retrieve hosts connected to Sagemcom F@st device."""
         if self._active_api_mode == ApiMode.REST:
-            data = await self.__rest_request("GET", "/api/v1/home")
-            if not data or not isinstance(data, list):
-                raise UnknownException("Invalid response from /api/v1/home")
-
-            home = data[0]
+            rest_errors: list[Exception] = []
             devices: list[Device] = []
 
-            for entry in home.get("wirelessListDevice", []):
-                devices.append(
-                    Device(
-                        uid=entry.get("id"),
-                        phys_address=entry.get("macAddress"),
-                        ip_address=entry.get("ipAddress"),
-                        host_name=entry.get("hostname"),
-                        user_host_name=entry.get("friendlyname"),
-                        active=entry.get("active", True),
-                        interface_type="wifi",
-                        detected_device_type=entry.get("devicetype"),
-                    )
-                )
-
-            for entry in home.get("ethernetListDevice", []):
-                devices.append(
-                    Device(
-                        uid=entry.get("id"),
-                        phys_address=entry.get("macAddress"),
-                        ip_address=entry.get("ipAddress"),
-                        host_name=entry.get("hostname"),
-                        user_host_name=entry.get("friendlyname"),
-                        active=entry.get("active", True),
-                        interface_type="ethernet",
-                        detected_device_type=entry.get("devicetype"),
-                    )
-                )
+            for endpoint, parser in (
+                ("/api/v1/home", self.__extract_rest_home_hosts),
+                ("/api/v1/hosts", self.__extract_rest_hosts),
+            ):
+                try:
+                    data = await self.__rest_request("GET", endpoint)
+                    devices = parser(data)
+                    break
+                except (UnknownException, UnsupportedHostException) as exception:
+                    rest_errors.append(exception)
+            else:
+                if rest_errors:
+                    raise rest_errors[-1]
+                raise UnknownException("Unable to retrieve hosts using REST endpoints")
 
             if only_active:
                 return [d for d in devices if d.active is True]
@@ -746,7 +839,9 @@ class SagemcomClient:
     )
     async def reboot(self):
         """Reboot Sagemcom F@st device."""
-        self.__ensure_legacy_api()
+        if self._active_api_mode == ApiMode.REST:
+            return await self.__rest_request("POST", "/api/v1/device/reboot")
+
         action = {
             "id": 0,
             "method": "reboot",

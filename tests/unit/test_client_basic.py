@@ -234,3 +234,96 @@ async def test_get_hosts_rest_mode():
     assert devices[0].interface_type == "wifi"
     assert devices[1].host_name == "lan-device"
     assert devices[1].interface_type == "ethernet"
+
+
+@pytest.mark.asyncio
+async def test_get_hosts_rest_fallbacks_to_hosts_endpoint():
+    """/api/v1/hosts should be used when /api/v1/home response is invalid."""
+    mock_session = MagicMock(spec=ClientSession)
+    mock_session.close = AsyncMock()
+
+    login_response = AsyncMock()
+    login_response.status = 204
+    login_response.text = AsyncMock(return_value="")
+    login_response.__aenter__ = AsyncMock(return_value=login_response)
+    login_response.__aexit__ = AsyncMock(return_value=None)
+
+    home_response = AsyncMock()
+    home_response.status = 200
+    home_response.json = AsyncMock(return_value=[{"unexpected": "shape"}])
+    home_response.__aenter__ = AsyncMock(return_value=home_response)
+    home_response.__aexit__ = AsyncMock(return_value=None)
+
+    hosts_payload = [
+        {
+            "id": 7,
+            "hostname": "tablet",
+            "friendlyname": "tablet",
+            "macAddress": "aa:aa:aa:aa:aa:aa",
+            "ipAddress": "192.168.1.50",
+            "active": "true",
+            "interfaceType": "wireless",
+            "devicetype": "TABLET",
+        }
+    ]
+    hosts_response = AsyncMock()
+    hosts_response.status = 200
+    hosts_response.json = AsyncMock(return_value=hosts_payload)
+    hosts_response.__aenter__ = AsyncMock(return_value=hosts_response)
+    hosts_response.__aexit__ = AsyncMock(return_value=None)
+
+    mock_session.request.side_effect = [login_response, home_response, hosts_response]
+
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        session=mock_session,
+        api_mode=ApiMode.REST,
+    )
+
+    await client.login()
+    devices = await client.get_hosts(only_active=True)
+
+    assert len(devices) == 1
+    assert devices[0].host_name == "tablet"
+    assert devices[0].interface_type == "wifi"
+    assert devices[0].active is True
+
+
+@pytest.mark.asyncio
+async def test_reboot_rest_mode():
+    """reboot should call REST endpoint on REST firmware."""
+    mock_session = MagicMock(spec=ClientSession)
+    mock_session.close = AsyncMock()
+
+    login_response = AsyncMock()
+    login_response.status = 204
+    login_response.text = AsyncMock(return_value="")
+    login_response.__aenter__ = AsyncMock(return_value=login_response)
+    login_response.__aexit__ = AsyncMock(return_value=None)
+
+    reboot_response = AsyncMock()
+    reboot_response.status = 204
+    reboot_response.text = AsyncMock(return_value="")
+    reboot_response.__aenter__ = AsyncMock(return_value=reboot_response)
+    reboot_response.__aexit__ = AsyncMock(return_value=None)
+
+    mock_session.request.side_effect = [login_response, reboot_response]
+
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        session=mock_session,
+        api_mode=ApiMode.REST,
+    )
+
+    await client.login()
+    result = await client.reboot()
+
+    assert result is None
+    assert mock_session.request.call_count == 2
+    reboot_call = mock_session.request.call_args_list[1]
+    assert reboot_call.args[0] == "POST"
+    assert reboot_call.args[1].endswith("/api/v1/device/reboot")

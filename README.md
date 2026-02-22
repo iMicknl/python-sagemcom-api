@@ -135,7 +135,7 @@ The client supports two API variants:
 - `ApiMode.REST`: newer `/api/v1/*` API used by newer firmwares
 - `ApiMode.AUTO` (default): tries legacy first, then falls back to REST when the legacy endpoint is unavailable
 
-When REST mode is active, high-level helpers like `get_device_info()` and `get_hosts()` are supported. XPath-based methods (`get_value_by_xpath`, `set_value_by_xpath`, `get_values_by_xpaths`) are legacy-only.
+When REST mode is active, high-level helpers like `get_device_info()`, `get_hosts()` and `reboot()` are supported. XPath-based methods (`get_value_by_xpath`, `set_value_by_xpath`, `get_values_by_xpaths`) are legacy-only.
 
 ### Determine the EncryptionMethod
 
