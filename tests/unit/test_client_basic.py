@@ -12,6 +12,21 @@ from sagemcom_api.exceptions import AuthenticationException
 
 
 @pytest.mark.asyncio
+async def test_default_session_accepts_ip_cookies():
+    """Default aiohttp session should accept cookies from IP hosts."""
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        authentication_method=EncryptionMethod.MD5,
+    )
+    try:
+        assert getattr(client.session.cookie_jar, "_unsafe", False) is True
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
 async def test_login_success(mock_session_factory, login_success_response):
     """
     Test successful login with mocked session.
@@ -289,6 +304,60 @@ async def test_get_hosts_rest_fallbacks_to_hosts_endpoint():
     assert devices[0].host_name == "tablet"
     assert devices[0].interface_type == "wifi"
     assert devices[0].active is True
+
+
+@pytest.mark.asyncio
+async def test_get_hosts_rest_fallbacks_on_home_400():
+    """/api/v1/hosts should be tried when /api/v1/home returns HTTP 400."""
+    mock_session = MagicMock(spec=ClientSession)
+    mock_session.close = AsyncMock()
+
+    login_response = AsyncMock()
+    login_response.status = 204
+    login_response.text = AsyncMock(return_value="")
+    login_response.__aenter__ = AsyncMock(return_value=login_response)
+    login_response.__aexit__ = AsyncMock(return_value=None)
+
+    home_response = AsyncMock()
+    home_response.status = 400
+    home_response.text = AsyncMock(return_value='{"exception":{"domain":"/api/v1/home"}}')
+    home_response.__aenter__ = AsyncMock(return_value=home_response)
+    home_response.__aexit__ = AsyncMock(return_value=None)
+
+    hosts_payload = [
+        {
+            "id": 3,
+            "hostname": "phone",
+            "friendlyname": "phone",
+            "macAddress": "de:ad:be:ef:00:01",
+            "ipAddress": "192.168.1.25",
+            "active": True,
+            "interfaceType": "wireless",
+            "devicetype": "SMARTPHONE",
+        }
+    ]
+    hosts_response = AsyncMock()
+    hosts_response.status = 200
+    hosts_response.json = AsyncMock(return_value=hosts_payload)
+    hosts_response.__aenter__ = AsyncMock(return_value=hosts_response)
+    hosts_response.__aexit__ = AsyncMock(return_value=None)
+
+    mock_session.request.side_effect = [login_response, home_response, hosts_response]
+
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        session=mock_session,
+        api_mode=ApiMode.REST,
+    )
+
+    await client.login()
+    devices = await client.get_hosts()
+
+    assert len(devices) == 1
+    assert devices[0].host_name == "phone"
+    assert devices[0].interface_type == "wifi"
 
 
 @pytest.mark.asyncio
