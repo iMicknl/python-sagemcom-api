@@ -14,10 +14,12 @@ from typing import Any
 import backoff
 import humps
 from aiohttp import (
+    CookieJar,
     ClientConnectorError,
     ClientOSError,
     ClientSession,
     ClientTimeout,
+    CookieJar,
     ContentTypeError,
     ServerDisconnectedError,
     TCPConnector,
@@ -111,7 +113,10 @@ class SagemcomClient:
             else ClientSession(
                 headers={"User-Agent": f"{DEFAULT_USER_AGENT}"},
                 timeout=ClientTimeout(DEFAULT_TIMEOUT),
-                connector=TCPConnector(verify_ssl=verify_ssl if verify_ssl is not None else True),
+                cookie_jar=CookieJar(unsafe=True),
+                connector=TCPConnector(
+                    verify_ssl=verify_ssl if verify_ssl is not None else True
+                ),
             )
         )
 
@@ -764,7 +769,11 @@ class SagemcomClient:
                     data = await self.__rest_request("GET", endpoint)
                     devices = parser(data)
                     break
-                except (UnknownException, UnsupportedHostException) as exception:
+                except (
+                    UnknownException,
+                    UnsupportedHostException,
+                    AuthenticationException,
+                ) as exception:
                     rest_errors.append(exception)
             else:
                 if rest_errors:
