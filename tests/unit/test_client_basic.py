@@ -2,10 +2,12 @@
 
 # pylint: disable=protected-access
 
-import pytest
+from unittest.mock import AsyncMock, MagicMock
 
+from aiohttp import ClientSession
+import pytest
 from sagemcom_api.client import SagemcomClient
-from sagemcom_api.enums import EncryptionMethod
+from sagemcom_api.enums import ApiMode, EncryptionMethod
 from sagemcom_api.exceptions import AuthenticationException
 
 
@@ -131,3 +133,104 @@ async def test_login_with_preconfigured_fixture(mock_client_sha512):
     assert client.authentication_method == EncryptionMethod.SHA512
     assert client._session_id == 12345
     assert client._server_nonce == "abcdef1234567890"
+
+
+@pytest.mark.asyncio
+async def test_login_auto_fallbacks_to_rest_when_legacy_503():
+    """Auto mode should switch to REST when legacy endpoint is unavailable."""
+    mock_session = MagicMock(spec=ClientSession)
+    mock_session.close = AsyncMock()
+
+    legacy_response = AsyncMock()
+    legacy_response.status = 503
+    legacy_response.text = AsyncMock(return_value="<html>503 Service Unavailable</html>")
+    legacy_response.__aenter__ = AsyncMock(return_value=legacy_response)
+    legacy_response.__aexit__ = AsyncMock(return_value=None)
+    mock_session.post.return_value = legacy_response
+
+    rest_response = AsyncMock()
+    rest_response.status = 204
+    rest_response.text = AsyncMock(return_value="")
+    rest_response.__aenter__ = AsyncMock(return_value=rest_response)
+    rest_response.__aexit__ = AsyncMock(return_value=None)
+    mock_session.request.return_value = rest_response
+
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        authentication_method=EncryptionMethod.MD5,
+        session=mock_session,
+        api_mode=ApiMode.AUTO,
+    )
+
+    result = await client.login()
+
+    assert result is True
+    assert client.active_api_mode == ApiMode.REST
+    assert mock_session.post.call_count == 1
+    assert mock_session.request.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_get_hosts_rest_mode():
+    """get_hosts should parse wifi and ethernet devices on REST firmware."""
+    mock_session = MagicMock(spec=ClientSession)
+    mock_session.close = AsyncMock()
+
+    login_response = AsyncMock()
+    login_response.status = 204
+    login_response.text = AsyncMock(return_value="")
+    login_response.__aenter__ = AsyncMock(return_value=login_response)
+    login_response.__aexit__ = AsyncMock(return_value=None)
+
+    home_payload = [
+        {
+            "wirelessListDevice": [
+                {
+                    "id": 1,
+                    "hostname": "wifi-device",
+                    "friendlyname": "wifi-device",
+                    "macAddress": "aa:bb:cc:dd:ee:ff",
+                    "ipAddress": "192.168.1.2",
+                    "active": True,
+                    "devicetype": "MISCELLANEOUS",
+                }
+            ],
+            "ethernetListDevice": [
+                {
+                    "id": 2,
+                    "hostname": "lan-device",
+                    "friendlyname": "lan-device",
+                    "macAddress": "11:22:33:44:55:66",
+                    "ipAddress": "192.168.1.3",
+                    "active": True,
+                    "devicetype": "MISCELLANEOUS",
+                }
+            ],
+        }
+    ]
+    hosts_response = AsyncMock()
+    hosts_response.status = 200
+    hosts_response.json = AsyncMock(return_value=home_payload)
+    hosts_response.__aenter__ = AsyncMock(return_value=hosts_response)
+    hosts_response.__aexit__ = AsyncMock(return_value=None)
+
+    mock_session.request.side_effect = [login_response, hosts_response]
+
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        session=mock_session,
+        api_mode=ApiMode.REST,
+    )
+
+    await client.login()
+    devices = await client.get_hosts()
+
+    assert len(devices) == 2
+    assert devices[0].host_name == "wifi-device"
+    assert devices[0].interface_type == "wifi"
+    assert devices[1].host_name == "lan-device"
+    assert devices[1].interface_type == "ethernet"
