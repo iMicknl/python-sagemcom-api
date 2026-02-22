@@ -63,7 +63,7 @@ The following script can be used as a quickstart.
 ```python
 import asyncio
 from sagemcom_api.client import SagemcomClient
-from sagemcom_api.enums import EncryptionMethod
+from sagemcom_api.enums import ApiMode, EncryptionMethod
 from sagemcom_api.exceptions import NonWritableParameterException
 
 HOST = ""
@@ -71,9 +71,17 @@ USERNAME = ""
 PASSWORD = ""
 ENCRYPTION_METHOD = EncryptionMethod.SHA512 # or EncryptionMethod.MD5
 VALIDATE_SSL_CERT = True
+API_MODE = ApiMode.AUTO  # auto, legacy or rest
 
 async def main() -> None:
-    async with SagemcomClient(HOST, USERNAME, PASSWORD, ENCRYPTION_METHOD, verify_ssl=VALIDATE_SSL_CERT) as client:
+    async with SagemcomClient(
+        HOST,
+        USERNAME,
+        PASSWORD,
+        ENCRYPTION_METHOD,
+        api_mode=API_MODE,
+        verify_ssl=VALIDATE_SSL_CERT,
+    ) as client:
         try:
             await client.login()
         except Exception as exception:  # pylint: disable=broad-except
@@ -118,6 +126,16 @@ asyncio.run(main())
 - `set_value_by_xpath(xpath, value)`
 
 ## Advanced
+
+### API Mode
+
+The client supports two API variants:
+
+- `ApiMode.LEGACY`: original `/cgi/json-req` API with XPath support
+- `ApiMode.REST`: newer `/api/v1/*` API used by newer firmwares
+- `ApiMode.AUTO` (default): tries legacy first, then falls back to REST when the legacy endpoint is unavailable
+
+When REST mode is active, high-level helpers like `get_device_info()` and `get_hosts()` are supported. XPath-based methods (`get_value_by_xpath`, `set_value_by_xpath`, `get_values_by_xpaths`) are legacy-only.
 
 ### Determine the EncryptionMethod
 
