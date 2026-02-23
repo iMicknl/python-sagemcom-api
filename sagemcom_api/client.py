@@ -579,13 +579,15 @@ class SagemcomClient:
                 "Use helper methods supported for REST firmware instead."
             )
 
-    async def get_encryption_method(self):
+    async def get_encryption_method(self) -> EncryptionMethod:
         """Determine which encryption method to use for authentication and set it directly."""
         if self.api_mode == ApiMode.REST:
-            return None
+            return EncryptionMethod.NONE
 
         for encryption_method in EncryptionMethod:
             try:
+                if encryption_method == EncryptionMethod.NONE:
+                    continue
                 self.authentication_method = encryption_method
                 self._password_hash = self.__generate_hash(
                     self.password, encryption_method
@@ -605,7 +607,7 @@ class SagemcomClient:
             ):
                 pass
 
-        return None
+        return EncryptionMethod.NONE
 
     @backoff.on_exception(
         backoff.expo,

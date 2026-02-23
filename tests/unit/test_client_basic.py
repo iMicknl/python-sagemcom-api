@@ -188,6 +188,22 @@ async def test_login_auto_fallbacks_to_rest_when_legacy_503():
 
 
 @pytest.mark.asyncio
+async def test_get_encryption_method_rest_returns_none():
+    """REST mode should immediately signal that no encryption method is needed."""
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        api_mode=ApiMode.REST,
+    )
+
+    result = await client.get_encryption_method()
+
+    assert result == EncryptionMethod.NONE
+    await client.close()
+
+
+@pytest.mark.asyncio
 async def test_get_hosts_rest_mode():
     """get_hosts should parse wifi and ethernet devices on REST firmware."""
     mock_session = MagicMock(spec=ClientSession)

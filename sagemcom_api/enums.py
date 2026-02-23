@@ -18,6 +18,7 @@ class EncryptionMethod(StrEnum):
     MD5 = "MD5"
     MD5_NONCE = "MD5_NONCE"
     SHA512 = "SHA512"
+    NONE = "NONE"
 
 
 @unique
