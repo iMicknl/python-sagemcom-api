@@ -12,6 +12,7 @@ from types import TracebackType
 from typing import Any
 import urllib.parse
 
+import logging
 from aiohttp import (
     ClientConnectorError,
     ClientOSError,
@@ -58,6 +59,8 @@ from .exceptions import (
 )
 from .models import Device, DeviceInfo, PortMapping
 
+LOGGER = logging.getLogger(__name__)
+
 
 async def retry_login(invocation: Mapping[str, Any]) -> None:
     """Retry login via backoff if an exception occurs."""
@@ -76,7 +79,7 @@ class SagemcomClient:
         host: str,
         username: str,
         password: str,
-        authentication_method: EncryptionMethod | None = None,
+        authentication_method: EncryptionMethod,
         api_mode: ApiMode | str = ApiMode.AUTO,
         session: ClientSession | None = None,
         ssl: bool | None = False,
@@ -542,30 +545,37 @@ class SagemcomClient:
         """Login to the router using configured API mode."""
         if self.api_mode == ApiMode.REST:
             self._active_api_mode = ApiMode.REST
+            LOGGER.info("API mode forced to REST")
             return await self.__rest_login()
 
         if self.api_mode == ApiMode.LEGACY:
             self._active_api_mode = ApiMode.LEGACY
+            LOGGER.info("API mode forced to LEGACY")
             return await self.__legacy_login()
 
         # Auto-detect mode: try legacy first, then fall back to REST for newer firmwares.
         try:
             self._active_api_mode = ApiMode.LEGACY
-            return await self.__legacy_login()
+            result = await self.__legacy_login()
+            LOGGER.info("API mode auto-detected as LEGACY")
+            return result
         except Exception as exception:  # pylint: disable=broad-except
             if not self.__should_fallback_to_rest(exception):
                 raise
 
             self._active_api_mode = ApiMode.REST
+            LOGGER.info("API mode auto-detected as REST")
             return await self.__rest_login()
 
     async def logout(self):
         """Log out of the Sagemcom F@st device."""
         if self._active_api_mode == ApiMode.REST:
-            await self.__rest_request("POST", "/api/v1/logout")
+            response = await self.__rest_request("POST", "/api/v1/logout", data={"_": ""})
+            LOGGER.info("REST logout response: %s", response)
         else:
             actions = {"id": 0, "method": "logOut"}
-            await self.__api_request_async([actions], False)
+            response = await self.__api_request_async([actions], False)
+            LOGGER.info("JSON-REQ logout response: %s", response)
 
         self._session_id = -1
         self._server_nonce = ""
