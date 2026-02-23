@@ -79,7 +79,7 @@ class SagemcomClient:
         host: str,
         username: str,
         password: str,
-        authentication_method: EncryptionMethod,
+        authentication_method: EncryptionMethod | None = None,
         api_mode: ApiMode | str = ApiMode.AUTO,
         session: ClientSession | None = None,
         ssl: bool | None = False,
