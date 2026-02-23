@@ -141,7 +141,7 @@ When REST mode is active, high-level helpers like `get_device_info()`, `get_host
 
 If you are not sure which encryption method to use, you can leave it empty or pass `None` and use `get_encryption_method` to determine the encryption method.
 
-`get_encryption_method` will return an `EncryptionMethod` when a match is found. Best would be to use this function only during your initial investigation.
+`get_encryption_method` will return an `EncryptionMethod` when a match is found and `EncryptionMethod.NONE` if no method matches or REST mode is configured. Best would be to use this function only during your initial investigation.
 
 This function will throw a `LoginTimeoutException` when no match is found, since this is still a HTTP Time Out. This could caused by the wrong encryption method, but also by trying to connect to an inaccessible host.
 
