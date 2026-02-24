@@ -388,6 +388,25 @@ class SagemcomClient:
         )
         return True
 
+    async def __probe_rest_availability(self) -> bool:
+        """Try a REST login/logout sequence to detect REST-only firmware."""
+        try:
+            await self.__rest_request(
+                "POST",
+                "/api/v1/login",
+                data={"login": self.username, "password": self.password},
+            )
+        except (
+            AuthenticationException,
+            UnauthorizedException,
+            UnsupportedHostException,
+            UnknownException,
+        ):
+            return False
+
+        await self.__rest_request("POST", "/api/v1/logout", data={"_": ""})
+        return True
+
     @staticmethod
     def __first_value(data: dict[str, Any], *keys: str) -> Any:
         """Return the first non-None value from data for the given keys."""
@@ -557,6 +576,9 @@ class SagemcomClient:
             Probing further would only extend the lock, so detection stops here.
         """
         if self.api_mode == ApiMode.REST:
+            return EncryptionMethod.NONE
+
+        if self.api_mode == ApiMode.AUTO and await self.__probe_rest_availability():
             return EncryptionMethod.NONE
 
         for encryption_method in EncryptionMethod:
