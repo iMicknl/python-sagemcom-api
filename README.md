@@ -33,6 +33,7 @@ The Sagemcom F@st series is used by multiple cable companies, where some cable c
 | Sagemcom F@st 5370e          | Telia                      | sha512                |                               |
 | Sagemcom F@st 5380           | TDC                        | md5                   |                               |
 | Sagemcom F@st 5566           | Bell (Home Hub 3000)       | md5                   | username: guest, password: "" |
+| Sagemcom F@st 5598           | YouFibre                   | None / New API        | username: admin, password: "" |
 | Sagemcom F@st 5688T          | Salt (FibreBox_X6)         | sha512                | username: admin               |
 | Sagemcom F@st 5689           | Bell (Home Hub 4000)       | md5                   | username: admin, password: "" |
 | Sagemcom F@st 5689E          | Bell (Giga Hub)            | sha512                | username: admin, password: "" |
