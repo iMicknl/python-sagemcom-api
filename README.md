@@ -33,6 +33,7 @@ The Sagemcom F@st series is used by multiple cable companies, where some cable c
 | Sagemcom F@st 5370e          | Telia                      | sha512                |                               |
 | Sagemcom F@st 5380           | TDC                        | md5                   |                               |
 | Sagemcom F@st 5566           | Bell (Home Hub 3000)       | md5                   | username: guest, password: "" |
+| Sagemcom F@st 5598           | YouFibre                   | None / New API        | username: admin, password: "" |
 | Sagemcom F@st 5688T          | Salt (FibreBox_X6)         | sha512                | username: admin               |
 | Sagemcom F@st 5689           | Bell (Home Hub 4000)       | md5                   | username: admin, password: "" |
 | Sagemcom F@st 5689E          | Bell (Giga Hub)            | sha512                | username: admin, password: "" |
@@ -63,7 +64,7 @@ The following script can be used as a quickstart.
 ```python
 import asyncio
 from sagemcom_api.client import SagemcomClient
-from sagemcom_api.enums import EncryptionMethod
+from sagemcom_api.enums import ApiMode, EncryptionMethod
 from sagemcom_api.exceptions import NonWritableParameterException
 
 HOST = ""
@@ -71,9 +72,17 @@ USERNAME = ""
 PASSWORD = ""
 ENCRYPTION_METHOD = EncryptionMethod.SHA512 # or EncryptionMethod.MD5
 VALIDATE_SSL_CERT = True
+API_MODE = ApiMode.AUTO  # auto, legacy or rest
 
 async def main() -> None:
-    async with SagemcomClient(HOST, USERNAME, PASSWORD, ENCRYPTION_METHOD, verify_ssl=VALIDATE_SSL_CERT) as client:
+    async with SagemcomClient(
+        HOST,
+        USERNAME,
+        PASSWORD,
+        ENCRYPTION_METHOD,
+        api_mode=API_MODE,
+        verify_ssl=VALIDATE_SSL_CERT,
+    ) as client:
         try:
             await client.login()
         except Exception as exception:  # pylint: disable=broad-except
@@ -119,11 +128,21 @@ asyncio.run(main())
 
 ## Advanced
 
+### API Mode
+
+The client supports two API variants:
+
+- `ApiMode.LEGACY`: original `/cgi/json-req` API with XPath support
+- `ApiMode.REST`: newer `/api/v1/*` API used by newer firmwares
+- `ApiMode.AUTO` (default): tries legacy first, then falls back to REST when the legacy endpoint is unavailable
+
+When REST mode is active, high-level helpers like `get_device_info()`, `get_hosts()` and `reboot()` are supported. XPath-based methods (`get_value_by_xpath`, `set_value_by_xpath`, `get_values_by_xpaths`) are legacy-only.
+
 ### Determine the EncryptionMethod
 
 If you are not sure which encryption method to use, you can leave it empty or pass `None` and use `get_encryption_method` to determine the encryption method.
 
-`get_encryption_method` will return an `EncryptionMethod` when a match is found. Best would be to use this function only during your initial investigation.
+`get_encryption_method` will return an `EncryptionMethod` when a match is found and `EncryptionMethod.NONE` if no method matches or REST mode is configured. Best would be to use this function only during your initial investigation.
 
 This function will throw a `LoginTimeoutException` when no match is found, since this is still a HTTP Time Out. This could caused by the wrong encryption method, but also by trying to connect to an inaccessible host.
 
