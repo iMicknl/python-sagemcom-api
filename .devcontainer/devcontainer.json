@@ -18,7 +18,8 @@
 		"vscode": {
 			"extensions": [
 				"ms-python.python",
-				"yzhang.markdown-all-in-one"
+				"yzhang.markdown-all-in-one",
+				"charliermarsh.ruff"
 			],
 			"python.testing.pytestArgs": [
 				"tests"
