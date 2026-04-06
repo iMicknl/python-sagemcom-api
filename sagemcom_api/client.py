@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import json
 import math
@@ -332,7 +331,7 @@ class SagemcomClient:
 
         try:
             response = await self.__api_request_async([actions], True)
-        except asyncio.TimeoutError as exception:
+        except TimeoutError as exception:
             raise LoginTimeoutException(
                 "Login request timed-out. This could be caused by using the wrong encryption method, or using a (non) SSL connection."
             ) from exception
@@ -358,7 +357,7 @@ class SagemcomClient:
 
     async def get_encryption_method(self):
         """Determine which encryption method to use for authentication and set it directly."""
-        for encryption_method in EncryptionMethod:  # ty: ignore[not-iterable]
+        for encryption_method in EncryptionMethod:
             try:
                 self.authentication_method = encryption_method
                 self._password_hash = self.__generate_hash(self.password, encryption_method)
@@ -437,7 +436,7 @@ class SagemcomClient:
 
         response = await self.__api_request_async(actions, False)
         values = [self.__get_response_value(response, i) for i in range(len(xpaths))]
-        data = dict(zip(xpaths.keys(), values))
+        data = dict(zip(xpaths.keys(), values, strict=True))
 
         return data
 

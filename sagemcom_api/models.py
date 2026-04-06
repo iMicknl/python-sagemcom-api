@@ -2,7 +2,7 @@
 
 import dataclasses
 from dataclasses import dataclass
-from typing import Any, Optional
+from typing import Any
 
 
 # pylint: disable=too-many-instance-attributes
@@ -10,43 +10,43 @@ from typing import Any, Optional
 class Device:
     """Device connected to a router."""
 
-    uid: Optional[int] = None
-    alias: Optional[str] = None
-    phys_address: Optional[str] = None
-    ip_address: Optional[str] = None
-    address_source: Optional[str] = None
-    dhcp_client: Optional[str] = None
-    lease_time_remaining: Optional[int] = None
-    associated_device: Optional[Any] = None
-    layer1_interface: Optional[Any] = None
-    layer3_interface: Optional[Any] = None
-    vendor_class_id: Optional[Any] = None
-    client_id: Optional[Any] = None
-    user_class_id: Optional[Any] = None
-    host_name: Optional[Any] = None
-    active: Optional[bool] = None
-    lease_start: Optional[int] = None
-    lease_duration: Optional[int] = None
-    interface_type: Optional[str] = None  # enum!
-    detected_device_type: Optional[str] = None
-    active_last_change: Optional[Any] = None
-    user_friendly_name: Optional[str] = None
-    user_host_name: Optional[str] = None
-    user_device_type: Optional[Any] = None  # enum!
-    icon: Optional[Any] = None
-    room: Optional[Any] = None
-    blacklist_enable: Optional[bool] = None
-    blacklisted: Optional[bool] = None
-    unblock_hours_count: Optional[int] = None
-    blacklist_status: Optional[bool] = None
-    blacklisted_according_to_schedule: Optional[bool] = None
-    blacklisted_schedule: Optional[list] = None
-    hidden: Optional[bool] = None
-    options: Optional[list] = None
-    vendor_class_idv6: Optional[Any] = None
-    ipv4_addresses: Optional[list] = None
-    ipv6_addresses: Optional[list] = None
-    device_type_association: Optional[Any] = None
+    uid: int | None = None
+    alias: str | None = None
+    phys_address: str | None = None
+    ip_address: str | None = None
+    address_source: str | None = None
+    dhcp_client: str | None = None
+    lease_time_remaining: int | None = None
+    associated_device: Any | None = None
+    layer1_interface: Any | None = None
+    layer3_interface: Any | None = None
+    vendor_class_id: Any | None = None
+    client_id: Any | None = None
+    user_class_id: Any | None = None
+    host_name: Any | None = None
+    active: bool | None = None
+    lease_start: int | None = None
+    lease_duration: int | None = None
+    interface_type: str | None = None  # enum!
+    detected_device_type: str | None = None
+    active_last_change: Any | None = None
+    user_friendly_name: str | None = None
+    user_host_name: str | None = None
+    user_device_type: Any | None = None  # enum!
+    icon: Any | None = None
+    room: Any | None = None
+    blacklist_enable: bool | None = None
+    blacklisted: bool | None = None
+    unblock_hours_count: int | None = None
+    blacklist_status: bool | None = None
+    blacklisted_according_to_schedule: bool | None = None
+    blacklisted_schedule: list | None = None
+    hidden: bool | None = None
+    options: list | None = None
+    vendor_class_idv6: Any | None = None
+    ipv4_addresses: list | None = None
+    ipv6_addresses: list | None = None
+    device_type_association: Any | None = None
 
     # pylint:disable=fixme
     # TODO Remove extra kwargs before init
@@ -74,42 +74,42 @@ class DeviceInfo:
     """Sagemcom Router representation."""
 
     mac_address: str
-    serial_number: Optional[str] = None
-    manufacturer: Optional[Any] = None
-    model_name: Optional[Any] = None
-    model_number: Optional[Any] = None
-    software_version: Optional[str] = None
-    hardware_version: Optional[str] = None
-    bootloader_version: Optional[Any] = None
-    device_category: Optional[Any] = None
-    manufacturer_oui: Optional[Any] = None
-    product_class: Optional[str] = None
-    description: Optional[str] = None
-    additional_hardware_version: Optional[str] = None
-    additional_software_version: Optional[str] = None
-    external_firmware_version: Optional[str] = None
-    internal_firmware_version: Optional[str] = None
-    gui_firmware_version: Optional[str] = None
-    guiapi_version: Optional[float] = None
-    provisioning_code: Optional[str] = None
-    up_time: Optional[int] = None
-    first_use_date: Optional[str] = None
-    mode: Optional[str] = None
-    country: Optional[str] = None
-    reboot_count: Optional[int] = None
-    nodes_to_restore: Optional[str] = None
-    router_name: Optional[str] = None
-    reboot_status: Optional[float] = None
-    reset_status: Optional[float] = None
-    update_status: Optional[float] = None
-    SNMP: Optional[bool] = None  # pylint: disable=invalid-name
-    first_connection: Optional[bool] = None
-    build_date: Optional[str] = None
-    spec_version: Optional[str] = None
-    CLID: Optional[str] = None  # pylint: disable=invalid-name
-    flush_device_log: Optional[bool] = None
-    locations: Optional[str] = None
-    api_version: Optional[str] = None
+    serial_number: str | None = None
+    manufacturer: Any | None = None
+    model_name: Any | None = None
+    model_number: Any | None = None
+    software_version: str | None = None
+    hardware_version: str | None = None
+    bootloader_version: Any | None = None
+    device_category: Any | None = None
+    manufacturer_oui: Any | None = None
+    product_class: str | None = None
+    description: str | None = None
+    additional_hardware_version: str | None = None
+    additional_software_version: str | None = None
+    external_firmware_version: str | None = None
+    internal_firmware_version: str | None = None
+    gui_firmware_version: str | None = None
+    guiapi_version: float | None = None
+    provisioning_code: str | None = None
+    up_time: int | None = None
+    first_use_date: str | None = None
+    mode: str | None = None
+    country: str | None = None
+    reboot_count: int | None = None
+    nodes_to_restore: str | None = None
+    router_name: str | None = None
+    reboot_status: float | None = None
+    reset_status: float | None = None
+    update_status: float | None = None
+    SNMP: bool | None = None  # pylint: disable=invalid-name
+    first_connection: bool | None = None
+    build_date: str | None = None
+    spec_version: str | None = None
+    CLID: str | None = None  # pylint: disable=invalid-name
+    flush_device_log: bool | None = None
+    locations: str | None = None
+    api_version: str | None = None
 
     # pylint:disable=fixme
     # TODO Remove extra kwargs before init
@@ -133,23 +133,23 @@ class PortMapping:
 
     uid: int
     enable: bool
-    status: Optional[str] = None  # Enum
-    alias: Optional[str] = None
-    external_interface: Optional[str] = None
-    all_external_interfaces: Optional[bool] = None
-    lease_duration: Optional[int] = None
-    external_port: Optional[int] = None
-    external_port_end_range: Optional[int] = None
-    internal_interface: Optional[str] = None
-    internal_port: Optional[int] = None
-    protocol: Optional[str] = None
-    service: Optional[str] = None
-    internal_client: Optional[str] = None
-    public_ip: Optional[str] = None
-    description: Optional[str] = None
-    creator: Optional[str] = None
-    target: Optional[str] = None
-    lease_start: Optional[str] = None  # Date?
+    status: str | None = None  # Enum
+    alias: str | None = None
+    external_interface: str | None = None
+    all_external_interfaces: bool | None = None
+    lease_duration: int | None = None
+    external_port: int | None = None
+    external_port_end_range: int | None = None
+    internal_interface: str | None = None
+    internal_port: int | None = None
+    protocol: str | None = None
+    service: str | None = None
+    internal_client: str | None = None
+    public_ip: str | None = None
+    description: str | None = None
+    creator: str | None = None
+    target: str | None = None
+    lease_start: str | None = None  # Date?
 
     # pylint:disable=fixme
     # TODO Remove extra kwargs before init
