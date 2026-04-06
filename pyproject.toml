@@ -22,7 +22,7 @@ repository = "https://github.com/iMicknl/python-sagemcom-api"
 
 [dependency-groups]
 dev = [
-    "pytest>=8.4,<9.0",
+    "pytest>=8.4,<10.0",
     "pytest-asyncio>=1.2.0,<2.0",
     "pytest-aiohttp>=1.0.5,<2.0",
     "pytest-cov>=7.0.0,<8.0",
