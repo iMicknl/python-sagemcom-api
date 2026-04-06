@@ -80,6 +80,12 @@ select = [
 ]
 ignore = ["E501"] # Line too long
 
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "S101", # assert is standard in tests
+    "S106", # hardcoded passwords are acceptable in test fixtures
+]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]

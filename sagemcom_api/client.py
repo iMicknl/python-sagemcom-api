@@ -128,7 +128,7 @@ class SagemcomClient:
 
     def __generate_nonce(self, upper_limit=500000):
         """Generate pseudo random number (nonce) to avoid replay attacks."""
-        self._current_nonce = math.floor(random.randrange(0, upper_limit))
+        self._current_nonce = math.floor(random.randrange(0, upper_limit))  # noqa: S311 — router protocol requires this nonce
 
     def __generate_request_id(self):
         """Generate sequential request ID."""
@@ -138,7 +138,7 @@ class SagemcomClient:
         """Build MD5 with nonce hash token. UINT_MAX is hardcoded in the firmware."""
 
         def md5(input_string):
-            return hashlib.md5(input_string.encode()).hexdigest()
+            return hashlib.md5(input_string.encode()).hexdigest()  # noqa: S324 — MD5 required by router firmware
 
         n = self.__generate_nonce(UINT_MAX) if self._current_nonce is None else self._current_nonce
         f = 0
@@ -154,7 +154,7 @@ class SagemcomClient:
         bytes_object = bytes(value, encoding="utf-8")
 
         if auth_method == EncryptionMethod.MD5:
-            return hashlib.md5(bytes_object).hexdigest()
+            return hashlib.md5(bytes_object).hexdigest()  # noqa: S324 — MD5 required by router firmware
 
         if auth_method == EncryptionMethod.SHA512:
             return hashlib.sha512(bytes_object).hexdigest()

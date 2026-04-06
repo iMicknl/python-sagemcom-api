@@ -66,7 +66,7 @@ def xpath_value_response() -> dict[str, Any]:
 
 @pytest.fixture
 def mock_session_factory():
-    """Factory fixture for creating mock aiohttp ClientSession.
+    """Create a factory for mock aiohttp ClientSession.
 
     Returns a factory function that creates a mock session with configurable responses.
     Mock responses are consumed in sequence (first call gets first response, etc.).
