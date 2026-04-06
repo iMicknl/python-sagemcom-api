@@ -25,23 +25,25 @@ jobs:
         with:
           python-version: "${{ matrix.python-version }}"
 
-      - name: Set up Poetry
-        uses: Gr1N/setup-poetry@v9
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
 
       - name: Cache venv
         uses: actions/cache@v5
         with:
           path: .venv
-          key: venv-${{ hashFiles('**/poetry.lock') }}
+          key: venv-${{ hashFiles('**/uv.lock') }}
 
-      - name: Cache pre-commit
+      - name: Cache prek
         uses: actions/cache@v5
         with:
-          path: ~/.cache/pre-commit/
-          key: ${{ runner.os }}-pre-commit-${{ hashFiles('**/poetry.lock') }}-${{ hashFiles('**/.pre-commit-config.yaml') }} # yamllint disable-line
+          path: ~/.cache/prek/
+          key: ${{ runner.os }}-prek-${{ hashFiles('**/uv.lock') }}-${{ hashFiles('**/.pre-commit-config.yaml') }} # yamllint disable-line
 
       - name: Install dependencies
-        run: poetry install
+        run: uv sync --all-groups
 
       - name: Register problems matchers
         run: |
@@ -50,5 +52,5 @@ jobs:
           echo "::add-matcher::.github/workflows/matchers/mypy.json"
           echo "::add-matcher::.github/workflows/matchers/python.json"
 
-      - name: Apply all pre-commit
-        run: poetry run pre-commit run -a
+      - name: Apply all prek hooks
+        run: uv run prek run -a
