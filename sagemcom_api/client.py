@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import json
 import math
@@ -22,8 +21,8 @@ from aiohttp import (
     ServerDisconnectedError,
     TCPConnector,
 )
-from .action_error_exception_handler import ActionErrorHandler
 
+from .action_error_exception_handler import ActionErrorHandler
 from .const import (
     API_ENDPOINT,
     DEFAULT_TIMEOUT,
@@ -310,7 +309,7 @@ class SagemcomClient:
             response = await self.__api_request_async([actions], True)
             ActionErrorHandler.throw_if(response)
 
-        except asyncio.TimeoutError as exception:
+        except TimeoutError as exception:
             raise LoginTimeoutException(
                 "Login request timed-out. This could be caused by using the wrong encryption method, or using a (non) SSL connection."
             ) from exception
@@ -369,7 +368,6 @@ class SagemcomClient:
         max_tries=1,
         on_backoff=retry_login,
     )
-    async def get_value_by_xpath(self, xpath: str, options: dict | None = None) -> dict:
     async def get_value_by_xpath(
         self,
         xpath: str,
@@ -407,7 +405,6 @@ class SagemcomClient:
         max_tries=1,
         on_backoff=retry_login,
     )
-    async def get_values_by_xpaths(self, xpaths, options: dict | None = None) -> dict:
     async def get_values_by_xpaths(
         self,
         xpaths,
@@ -496,7 +493,7 @@ class SagemcomClient:
                     "software_version": "Device/DeviceInfo/SoftwareVersion",
                 },
                 # missing values converted to empty string
-                suppress_action_errors=True
+                suppress_action_errors=True,
             )
             data["manufacturer"] = "Sagemcom"
 
