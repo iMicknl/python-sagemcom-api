@@ -1,7 +1,7 @@
 """Enums for the Sagemcom F@st client."""
 
-from enum import unique
 import sys
+from enum import unique
 
 # Since we support Python versions lower than 3.11, we use
 # a backport for StrEnum when needed.

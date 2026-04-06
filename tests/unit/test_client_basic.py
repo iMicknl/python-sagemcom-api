@@ -40,9 +40,7 @@ async def test_login_success(mock_session_factory, login_success_response):
 
 
 @pytest.mark.asyncio
-async def test_login_authentication_error(
-    mock_session_factory, login_auth_error_response
-):
+async def test_login_authentication_error(mock_session_factory, login_auth_error_response):
     """
     Test login raises AuthenticationException on XMO_AUTHENTICATION_ERR.
 
@@ -70,9 +68,7 @@ async def test_login_authentication_error(
 
 
 @pytest.mark.asyncio
-async def test_get_value_by_xpath_url_encoding(
-    mock_session_factory, login_success_response, xpath_value_response
-):
+async def test_get_value_by_xpath_url_encoding(mock_session_factory, login_success_response, xpath_value_response):
     """
     Test XPath values are URL-encoded with safe characters preserved.
 

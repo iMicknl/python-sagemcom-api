@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Mapping
 import hashlib
 import json
 import math
 import random
+import urllib.parse
+from collections.abc import Mapping
 from types import TracebackType
 from typing import Any
-import urllib.parse
 
+import backoff
+import humps
 from aiohttp import (
     ClientConnectorError,
     ClientOSError,
@@ -20,8 +22,6 @@ from aiohttp import (
     ServerDisconnectedError,
     TCPConnector,
 )
-import backoff
-import humps
 
 from .const import (
     API_ENDPOINT,
@@ -106,9 +106,7 @@ class SagemcomClient:
             else ClientSession(
                 headers={"User-Agent": f"{DEFAULT_USER_AGENT}"},
                 timeout=ClientTimeout(DEFAULT_TIMEOUT),
-                connector=TCPConnector(
-                    verify_ssl=verify_ssl if verify_ssl is not None else True
-                ),
+                connector=TCPConnector(verify_ssl=verify_ssl if verify_ssl is not None else True),
             )
         )
 
@@ -143,11 +141,7 @@ class SagemcomClient:
         def md5(input_string):
             return hashlib.md5(input_string.encode()).hexdigest()
 
-        n = (
-            self.__generate_nonce(UINT_MAX)
-            if self._current_nonce is None
-            else self._current_nonce
-        )
+        n = self.__generate_nonce(UINT_MAX) if self._current_nonce is None else self._current_nonce
         f = 0
         l_nonce = ""
         ha1 = md5(self.username + ":" + l_nonce + ":" + md5(self.password))
@@ -173,9 +167,7 @@ class SagemcomClient:
 
     def __get_credential_hash(self):
         """Build credential hash."""
-        return self.__generate_hash(
-            self.username + ":" + self._server_nonce + ":" + self._password_hash
-        )
+        return self.__generate_hash(self.username + ":" + self._server_nonce + ":" + self._password_hash)
 
     def __generate_auth_key(self):
         """Build auth key."""
@@ -240,8 +232,7 @@ class SagemcomClient:
 
             # No errors
             if (
-                error["description"] == XMO_REQUEST_NO_ERR
-                or error["description"] == "Ok"  # NOQA: W503
+                error["description"] == XMO_REQUEST_NO_ERR or error["description"] == "Ok"  # NOQA: W503
             ):
                 return result
 
@@ -373,9 +364,7 @@ class SagemcomClient:
         for encryption_method in EncryptionMethod:
             try:
                 self.authentication_method = encryption_method
-                self._password_hash = self.__generate_hash(
-                    self.password, encryption_method
-                )
+                self._password_hash = self.__generate_hash(self.password, encryption_method)
 
                 await self.login()
 
@@ -468,9 +457,7 @@ class SagemcomClient:
         max_tries=1,
         on_backoff=retry_login,
     )
-    async def set_value_by_xpath(
-        self, xpath: str, value: str, options: dict | None = None
-    ) -> dict:
+    async def set_value_by_xpath(self, xpath: str, value: str, options: dict | None = None) -> dict:
         """
         Retrieve raw value from router using XPath.
 
@@ -534,9 +521,7 @@ class SagemcomClient:
     )
     async def get_hosts(self, only_active: bool | None = False) -> list[Device]:
         """Retrieve hosts connected to Sagemcom F@st device."""
-        data = await self.get_value_by_xpath(
-            "Device/Hosts/Hosts", options={"capability-flags": {"interface": True}}
-        )
+        data = await self.get_value_by_xpath("Device/Hosts/Hosts", options={"capability-flags": {"interface": True}})
         devices = [Device(**d) for d in data]
 
         if only_active:

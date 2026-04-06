@@ -7,8 +7,8 @@ from pathlib import Path
 from typing import Any, Dict, List
 from unittest.mock import AsyncMock, MagicMock
 
-from aiohttp import ClientSession
 import pytest
+from aiohttp import ClientSession
 
 from sagemcom_api.client import SagemcomClient
 from sagemcom_api.enums import EncryptionMethod

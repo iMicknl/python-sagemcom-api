@@ -1,25 +1,42 @@
+# See https://pre-commit.com for more information
+# See https://pre-commit.com/hooks.html for more hooks
 repos:
-  - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v4.6.0
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  # Ruff version.
+  rev: v0.14.10
+  hooks:
+    # Run the linter.
+    - id: ruff-check
+      args: [ --fix ]
+    # Run the formatter.
+    - id: ruff-format
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
     hooks:
-      - id: check-json
+    -   id: trailing-whitespace
+    -   id: end-of-file-fixer
+    -   id: check-json
         exclude: .devcontainer
-      - id: check-yaml
-      - id: trailing-whitespace
-      - id: end-of-file-fixer
-  - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.5
+    -   id: check-yaml
+    -   id: check-added-large-files
+    -   id: no-commit-to-branch
+        stages: [pre-commit]
+        args: [--branch, main]
+-   repo: https://github.com/rhysd/actionlint
+    rev: v1.7.7
     hooks:
-      - id: ruff
-        name: ruff check
-        types: [ python ]
-      - id: ruff-format
-        name: ruff format
-        types: [ python ]
-  - repo: local
+    -   id: actionlint
+-   repo: local
     hooks:
       - id: mypy
         name: mypy
         entry: mypy
         language: system
         types: [ python ]
+        exclude: tests
+      - id: ty
+        name: ty check
+        entry: uv run ty check .
+        language: system
+        types: [ python ]
+        exclude: tests
