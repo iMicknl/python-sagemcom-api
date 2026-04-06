@@ -4,7 +4,7 @@
 
 import json
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -17,9 +17,8 @@ from sagemcom_api.enums import EncryptionMethod
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
 
-def load_fixture(filename: str) -> Dict[str, Any]:
-    """
-    Load a JSON fixture file.
+def load_fixture(filename: str) -> dict[str, Any]:
+    """Load a JSON fixture file.
 
     :param filename: Name of the fixture file (e.g., 'login_success.json')
     :return: Parsed JSON data as dict
@@ -30,45 +29,44 @@ def load_fixture(filename: str) -> Dict[str, Any]:
 
 
 @pytest.fixture
-def login_success_response() -> Dict[str, Any]:
+def login_success_response() -> dict[str, Any]:
     """Mock response for successful login."""
     return load_fixture("login_success.json")
 
 
 @pytest.fixture
-def login_auth_error_response() -> Dict[str, Any]:
+def login_auth_error_response() -> dict[str, Any]:
     """Mock response for authentication error."""
     return load_fixture("login_auth_error.json")
 
 
 @pytest.fixture
-def login_invalid_session_response() -> Dict[str, Any]:
+def login_invalid_session_response() -> dict[str, Any]:
     """Mock response for invalid session error."""
     return load_fixture("login_invalid_session.json")
 
 
 @pytest.fixture
-def device_info_response() -> Dict[str, Any]:
+def device_info_response() -> dict[str, Any]:
     """Mock response for device info query."""
     return load_fixture("device_info.json")
 
 
 @pytest.fixture
-def hosts_response() -> Dict[str, Any]:
+def hosts_response() -> dict[str, Any]:
     """Mock response for hosts query."""
     return load_fixture("hosts.json")
 
 
 @pytest.fixture
-def xpath_value_response() -> Dict[str, Any]:
+def xpath_value_response() -> dict[str, Any]:
     """Mock response for generic XPath getValue."""
     return load_fixture("xpath_value.json")
 
 
 @pytest.fixture
 def mock_session_factory():
-    """
-    Factory fixture for creating mock aiohttp ClientSession.
+    """Factory fixture for creating mock aiohttp ClientSession.
 
     Returns a factory function that creates a mock session with configurable responses.
     Mock responses are consumed in sequence (first call gets first response, etc.).
@@ -80,9 +78,8 @@ def mock_session_factory():
     :return: Factory function that takes list of response dicts
     """
 
-    def _create_mock_session(responses: List[Dict[str, Any]]) -> ClientSession:
-        """
-        Create a mock ClientSession with specified responses.
+    def _create_mock_session(responses: list[dict[str, Any]]) -> ClientSession:
+        """Create a mock ClientSession with specified responses.
 
         :param responses: List of response dictionaries to return in sequence
         :return: Mock ClientSession
@@ -120,8 +117,7 @@ def mock_session_factory():
 
 @pytest.fixture
 def mock_client_md5(mock_session_factory, login_success_response):
-    """
-    Create a SagemcomClient with MD5 encryption and mocked session.
+    """Create a SagemcomClient with MD5 encryption and mocked session.
 
     Pre-configured with successful login response.
 
@@ -139,8 +135,7 @@ def mock_client_md5(mock_session_factory, login_success_response):
 
 @pytest.fixture
 def mock_client_sha512(mock_session_factory, login_success_response):
-    """
-    Create a SagemcomClient with SHA512 encryption and mocked session.
+    """Create a SagemcomClient with SHA512 encryption and mocked session.
 
     Pre-configured with successful login response.
 
@@ -158,8 +153,7 @@ def mock_client_sha512(mock_session_factory, login_success_response):
 
 @pytest.fixture
 def mock_client_md5_nonce(mock_session_factory, login_success_response):
-    """
-    Create a SagemcomClient with MD5_NONCE encryption and mocked session.
+    """Create a SagemcomClient with MD5_NONCE encryption and mocked session.
 
     Pre-configured with successful login response.
 

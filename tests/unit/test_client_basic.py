@@ -11,8 +11,7 @@ from sagemcom_api.exceptions import AuthenticationException
 
 @pytest.mark.asyncio
 async def test_login_success(mock_session_factory, login_success_response):
-    """
-    Test successful login with mocked session.
+    """Test successful login with mocked session.
 
     Demonstrates:
     - Mocking aiohttp session at session.post level
@@ -41,8 +40,7 @@ async def test_login_success(mock_session_factory, login_success_response):
 
 @pytest.mark.asyncio
 async def test_login_authentication_error(mock_session_factory, login_auth_error_response):
-    """
-    Test login raises AuthenticationException on XMO_AUTHENTICATION_ERR.
+    """Test login raises AuthenticationException on XMO_AUTHENTICATION_ERR.
 
     Demonstrates:
     - Mocking error responses from the API
@@ -69,8 +67,7 @@ async def test_login_authentication_error(mock_session_factory, login_auth_error
 
 @pytest.mark.asyncio
 async def test_get_value_by_xpath_url_encoding(mock_session_factory, login_success_response, xpath_value_response):
-    """
-    Test XPath values are URL-encoded with safe characters preserved.
+    """Test XPath values are URL-encoded with safe characters preserved.
 
     Demonstrates:
     - XPath URL encoding behavior
@@ -108,8 +105,7 @@ async def test_get_value_by_xpath_url_encoding(mock_session_factory, login_succe
 
 @pytest.mark.asyncio
 async def test_login_with_preconfigured_fixture(mock_client_sha512):
-    """
-    Test login using pre-configured client fixture.
+    """Test login using pre-configured client fixture.
 
     Demonstrates:
     - Using pre-configured client fixtures for concise tests

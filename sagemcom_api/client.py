@@ -79,8 +79,7 @@ class SagemcomClient:
         ssl: bool | None = False,
         verify_ssl: bool | None = True,
     ):
-        """
-        Create a SagemCom client.
+        """Create a SagemCom client.
 
         :param host: the host of your Sagemcom router
         :param username: the username for your Sagemcom router
@@ -203,7 +202,8 @@ class SagemcomClient:
             value = None
 
         # Rewrite result to snake_case
-        value = humps.decamelize(value)
+        if value is not None:
+            value = humps.decamelize(value)
 
         return value
 
@@ -231,9 +231,7 @@ class SagemcomClient:
             error = self.__get_response_error(result)
 
             # No errors
-            if (
-                error["description"] == XMO_REQUEST_NO_ERR or error["description"] == "Ok"  # NOQA: W503
-            ):
+            if error["description"] == XMO_REQUEST_NO_ERR or error["description"] == "Ok":
                 return result
 
             if error["description"] == XMO_INVALID_SESSION_ERR:
@@ -308,7 +306,6 @@ class SagemcomClient:
 
     async def login(self):
         """Login to the SagemCom F@st router using a username and password."""
-
         actions = {
             "id": 0,
             "method": "logIn",
@@ -361,7 +358,7 @@ class SagemcomClient:
 
     async def get_encryption_method(self):
         """Determine which encryption method to use for authentication and set it directly."""
-        for encryption_method in EncryptionMethod:
+        for encryption_method in EncryptionMethod:  # ty: ignore[not-iterable]
             try:
                 self.authentication_method = encryption_method
                 self._password_hash = self.__generate_hash(self.password, encryption_method)
@@ -394,8 +391,7 @@ class SagemcomClient:
         on_backoff=retry_login,
     )
     async def get_value_by_xpath(self, xpath: str, options: dict | None = None) -> dict:
-        """
-        Retrieve raw value from router using XPath.
+        """Retrieve raw value from router using XPath.
 
         :param xpath: path expression
         :param options: optional options
@@ -424,8 +420,7 @@ class SagemcomClient:
         on_backoff=retry_login,
     )
     async def get_values_by_xpaths(self, xpaths, options: dict | None = None) -> dict:
-        """
-        Retrieve raw values from router using XPath.
+        """Retrieve raw values from router using XPath.
 
         :param xpaths: Dict of key to xpath expression
         :param options: optional options
@@ -458,8 +453,7 @@ class SagemcomClient:
         on_backoff=retry_login,
     )
     async def set_value_by_xpath(self, xpath: str, value: str, options: dict | None = None) -> dict:
-        """
-        Retrieve raw value from router using XPath.
+        """Retrieve raw value from router using XPath.
 
         :param xpath: path expression
         :param value: value

@@ -50,9 +50,35 @@ only-packages = true
 line-length = 140
 target-version = "py39"
 
+
 [tool.ruff.lint]
-select = ["E", "F", "UP", "B", "SIM", "I", "N"]
-ignore = ["E501"]
+select = [
+    # pydocstyle
+    "D",
+    # flake8-async
+    "ASYNC",
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+    # ruff
+    "RUF",
+    # flake8-bandit (security)
+    "S",
+    # flake8-print
+    "T",
+    # flake8-comprehensions
+    "C4",
+]
+ignore = ["E501"] # Line too long
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -69,3 +95,15 @@ markers = [
     "asyncio: mark test as an asyncio test",
     "integration: mark test as an integration test (requires router access)",
 ]
+
+[tool.mypy]
+exclude = ["tests/"]
+ignore_missing_imports = true
+
+[tool.ty.src]
+exclude = ["tests/"]
+
+[tool.ty.rules]
+# This project uses both mypy and ty; mypy's `type: ignore` comments
+# should not be flagged as unused by ty.
+unused-type-ignore-comment = "ignore"

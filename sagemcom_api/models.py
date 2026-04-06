@@ -2,7 +2,7 @@
 
 import dataclasses
 from dataclasses import dataclass
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 
 # pylint: disable=too-many-instance-attributes
@@ -40,12 +40,12 @@ class Device:
     unblock_hours_count: Optional[int] = None
     blacklist_status: Optional[bool] = None
     blacklisted_according_to_schedule: Optional[bool] = None
-    blacklisted_schedule: Optional[List] = None
+    blacklisted_schedule: Optional[list] = None
     hidden: Optional[bool] = None
-    options: Optional[List] = None
+    options: Optional[list] = None
     vendor_class_idv6: Optional[Any] = None
-    ipv4_addresses: Optional[List] = None
-    ipv6_addresses: Optional[List] = None
+    ipv4_addresses: Optional[list] = None
+    ipv6_addresses: Optional[list] = None
     device_type_association: Optional[Any] = None
 
     # pylint:disable=fixme
@@ -60,7 +60,7 @@ class Device:
     @property
     def id(self):
         """Return unique ID for device."""
-        return self.phys_address.upper()
+        return self.phys_address.upper() if self.phys_address else None
 
     @property
     def name(self):
