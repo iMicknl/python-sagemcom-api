@@ -50,5 +50,7 @@ jobs:
           echo "::add-matcher::.github/workflows/matchers/mypy.json"
           echo "::add-matcher::.github/workflows/matchers/python.json"
 
-      - name: Apply all prek hooks
-        run: uv run prek run -a
+      - name: Run prek (pre-commit checks)
+        env:
+          SKIP: ${{ github.ref == 'refs/heads/main' && 'no-commit-to-branch' || '' }}
+        run: uv run prek run --show-diff-on-failure --color=always --all-files
