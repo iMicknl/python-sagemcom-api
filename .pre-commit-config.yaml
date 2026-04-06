@@ -7,36 +7,19 @@ repos:
       - id: check-yaml
       - id: trailing-whitespace
       - id: end-of-file-fixer
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.9.5
+    hooks:
+      - id: ruff
+        name: ruff check
+        types: [ python ]
+      - id: ruff-format
+        name: ruff format
+        types: [ python ]
   - repo: local
     hooks:
-      - id: black
-        name: black
-        entry: black
-        language: system
-        types: [ python ]
-      - id: flake8
-        name: flake8
-        entry: flake8
-        language: system
-        types: [ python ]
-      - id: isort
-        name: isort
-        entry: isort
-        language: system
-        types: [ python ]
-      - id: pyupgrade
-        name: pyupgrade
-        entry: pyupgrade
-        args: ["--py37-plus"]
-        language: system
-        types: [ python ]
       - id: mypy
         name: mypy
         entry: mypy
-        language: system
-        types: [ python ]
-      - id: pylint
-        name: pylint
-        entry: pylint
         language: system
         types: [ python ]

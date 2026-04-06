@@ -47,8 +47,6 @@ jobs:
 
       - name: Register problems matchers
         run: |
-          echo "::add-matcher::.github/workflows/matchers/pylint.json"
-          echo "::add-matcher::.github/workflows/matchers/flake8.json"
           echo "::add-matcher::.github/workflows/matchers/mypy.json"
           echo "::add-matcher::.github/workflows/matchers/python.json"
 
