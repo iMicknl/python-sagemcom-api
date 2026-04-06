@@ -2,16 +2,17 @@
 
 from __future__ import annotations
 
-import asyncio
-from collections.abc import Mapping
 import hashlib
 import json
 import math
 import random
+import urllib.parse
+from collections.abc import Mapping
 from types import TracebackType
 from typing import Any
-import urllib.parse
 
+import backoff
+import humps
 from aiohttp import (
     ClientConnectorError,
     ClientOSError,
@@ -20,8 +21,6 @@ from aiohttp import (
     ServerDisconnectedError,
     TCPConnector,
 )
-import backoff
-import humps
 
 from .const import (
     API_ENDPOINT,
@@ -79,8 +78,7 @@ class SagemcomClient:
         ssl: bool | None = False,
         verify_ssl: bool | None = True,
     ):
-        """
-        Create a SagemCom client.
+        """Create a SagemCom client.
 
         :param host: the host of your Sagemcom router
         :param username: the username for your Sagemcom router
@@ -106,9 +104,7 @@ class SagemcomClient:
             else ClientSession(
                 headers={"User-Agent": f"{DEFAULT_USER_AGENT}"},
                 timeout=ClientTimeout(DEFAULT_TIMEOUT),
-                connector=TCPConnector(
-                    verify_ssl=verify_ssl if verify_ssl is not None else True
-                ),
+                connector=TCPConnector(verify_ssl=verify_ssl if verify_ssl is not None else True),
             )
         )
 
@@ -131,7 +127,7 @@ class SagemcomClient:
 
     def __generate_nonce(self, upper_limit=500000):
         """Generate pseudo random number (nonce) to avoid replay attacks."""
-        self._current_nonce = math.floor(random.randrange(0, upper_limit))
+        self._current_nonce = math.floor(random.randrange(0, upper_limit))  # noqa: S311 — router protocol requires this nonce
 
     def __generate_request_id(self):
         """Generate sequential request ID."""
@@ -141,13 +137,9 @@ class SagemcomClient:
         """Build MD5 with nonce hash token. UINT_MAX is hardcoded in the firmware."""
 
         def md5(input_string):
-            return hashlib.md5(input_string.encode()).hexdigest()
+            return hashlib.md5(input_string.encode()).hexdigest()  # noqa: S324 — MD5 required by router firmware
 
-        n = (
-            self.__generate_nonce(UINT_MAX)
-            if self._current_nonce is None
-            else self._current_nonce
-        )
+        n = self.__generate_nonce(UINT_MAX) if self._current_nonce is None else self._current_nonce
         f = 0
         l_nonce = ""
         ha1 = md5(self.username + ":" + l_nonce + ":" + md5(self.password))
@@ -161,7 +153,7 @@ class SagemcomClient:
         bytes_object = bytes(value, encoding="utf-8")
 
         if auth_method == EncryptionMethod.MD5:
-            return hashlib.md5(bytes_object).hexdigest()
+            return hashlib.md5(bytes_object).hexdigest()  # noqa: S324 — MD5 required by router firmware
 
         if auth_method == EncryptionMethod.SHA512:
             return hashlib.sha512(bytes_object).hexdigest()
@@ -173,9 +165,7 @@ class SagemcomClient:
 
     def __get_credential_hash(self):
         """Build credential hash."""
-        return self.__generate_hash(
-            self.username + ":" + self._server_nonce + ":" + self._password_hash
-        )
+        return self.__generate_hash(self.username + ":" + self._server_nonce + ":" + self._password_hash)
 
     def __generate_auth_key(self):
         """Build auth key."""
@@ -211,7 +201,8 @@ class SagemcomClient:
             value = None
 
         # Rewrite result to snake_case
-        value = humps.decamelize(value)
+        if value is not None:
+            value = humps.decamelize(value)
 
         return value
 
@@ -239,10 +230,7 @@ class SagemcomClient:
             error = self.__get_response_error(result)
 
             # No errors
-            if (
-                error["description"] == XMO_REQUEST_NO_ERR
-                or error["description"] == "Ok"  # NOQA: W503
-            ):
+            if error["description"] == XMO_REQUEST_NO_ERR or error["description"] == "Ok":
                 return result
 
             if error["description"] == XMO_INVALID_SESSION_ERR:
@@ -317,7 +305,6 @@ class SagemcomClient:
 
     async def login(self):
         """Login to the SagemCom F@st router using a username and password."""
-
         actions = {
             "id": 0,
             "method": "logIn",
@@ -344,7 +331,7 @@ class SagemcomClient:
 
         try:
             response = await self.__api_request_async([actions], True)
-        except asyncio.TimeoutError as exception:
+        except TimeoutError as exception:
             raise LoginTimeoutException(
                 "Login request timed-out. This could be caused by using the wrong encryption method, or using a (non) SSL connection."
             ) from exception
@@ -373,9 +360,7 @@ class SagemcomClient:
         for encryption_method in EncryptionMethod:
             try:
                 self.authentication_method = encryption_method
-                self._password_hash = self.__generate_hash(
-                    self.password, encryption_method
-                )
+                self._password_hash = self.__generate_hash(self.password, encryption_method)
 
                 await self.login()
 
@@ -405,8 +390,7 @@ class SagemcomClient:
         on_backoff=retry_login,
     )
     async def get_value_by_xpath(self, xpath: str, options: dict | None = None) -> dict:
-        """
-        Retrieve raw value from router using XPath.
+        """Retrieve raw value from router using XPath.
 
         :param xpath: path expression
         :param options: optional options
@@ -435,8 +419,7 @@ class SagemcomClient:
         on_backoff=retry_login,
     )
     async def get_values_by_xpaths(self, xpaths, options: dict | None = None) -> dict:
-        """
-        Retrieve raw values from router using XPath.
+        """Retrieve raw values from router using XPath.
 
         :param xpaths: Dict of key to xpath expression
         :param options: optional options
@@ -453,7 +436,7 @@ class SagemcomClient:
 
         response = await self.__api_request_async(actions, False)
         values = [self.__get_response_value(response, i) for i in range(len(xpaths))]
-        data = dict(zip(xpaths.keys(), values))
+        data = dict(zip(xpaths.keys(), values, strict=True))
 
         return data
 
@@ -468,11 +451,8 @@ class SagemcomClient:
         max_tries=1,
         on_backoff=retry_login,
     )
-    async def set_value_by_xpath(
-        self, xpath: str, value: str, options: dict | None = None
-    ) -> dict:
-        """
-        Retrieve raw value from router using XPath.
+    async def set_value_by_xpath(self, xpath: str, value: str, options: dict | None = None) -> dict:
+        """Retrieve raw value from router using XPath.
 
         :param xpath: path expression
         :param value: value
@@ -534,9 +514,7 @@ class SagemcomClient:
     )
     async def get_hosts(self, only_active: bool | None = False) -> list[Device]:
         """Retrieve hosts connected to Sagemcom F@st device."""
-        data = await self.get_value_by_xpath(
-            "Device/Hosts/Hosts", options={"capability-flags": {"interface": True}}
-        )
+        data = await self.get_value_by_xpath("Device/Hosts/Hosts", options={"capability-flags": {"interface": True}})
         devices = [Device(**d) for d in data]
 
         if only_active:

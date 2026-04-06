@@ -14,22 +14,22 @@ The test suite uses `pytest` with async support to validate the client's behavio
 
 ```bash
 # Run all tests
-poetry run pytest
+uv run pytest
 
 # Run only unit tests
-poetry run pytest tests/unit/
+uv run pytest tests/unit/
 
 # Run with coverage report
-poetry run pytest --cov=sagemcom_api
+uv run pytest --cov=sagemcom_api
 
 # Run with coverage HTML report
-poetry run pytest --cov=sagemcom_api --cov-report=html
+uv run pytest --cov=sagemcom_api --cov-report=html
 
 # Run specific test file
-poetry run pytest tests/unit/test_client_basic.py
+uv run pytest tests/unit/test_client_basic.py
 
 # Run specific test
-poetry run pytest tests/unit/test_client_basic.py::test_login_success
+uv run pytest tests/unit/test_client_basic.py::test_login_success
 ```
 
 ## Test Structure
@@ -155,7 +155,7 @@ await client.logout()             # Would raise StopIteration (no 3rd response)
 
 Run coverage reports regularly:
 ```bash
-poetry run pytest --cov=sagemcom_api --cov-report=term-missing
+uv run pytest --cov=sagemcom_api --cov-report=term-missing
 ```
 
 The `--cov-report=term-missing` shows which lines lack coverage.

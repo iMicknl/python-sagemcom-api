@@ -7,21 +7,31 @@
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	"features": {
 		"ghcr.io/devcontainers/features/github-cli:1": {},
-		"ghcr.io/devcontainers-contrib/features/poetry:2": {}
+		"ghcr.io/va-h/devcontainers-features/uv:1": {}
 	},
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	// "forwardPorts": [],
 	// Use 'postCreateCommand' to run commands after the container is created.
-	"postCreateCommand": "poetry config virtualenvs.in-project true && poetry install --with dev --no-interaction && . .venv/bin/activate && pre-commit install && pre-commit install-hooks",
+	"postCreateCommand": "uv sync --all-groups && uv run prek install -f",
 	// Configure tool-specific properties.
 	"customizations": {
 		"vscode": {
 			"extensions": [
 				"ms-python.python",
-				"yzhang.markdown-all-in-one"
+				"yzhang.markdown-all-in-one",
+				"charliermarsh.ruff"
 			],
-			"settings": {
-				"python.defaultInterpreterPath": "./.venv/bin/python"
+			"python.testing.pytestArgs": [
+				"tests"
+			],
+			"python.testing.unittestEnabled": false,
+			"python.testing.pytestEnabled": true,
+			"[python]": {
+				"editor.formatOnSave": true,
+				"editor.defaultFormatter": "charliermarsh.ruff",
+				"editor.codeActionsOnSave": {
+					"source.organizeImports.ruff": "explicit"
+				}
 			}
 		}
 	}

@@ -8,8 +8,11 @@ on:
 jobs:
   update_release_draft:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
     steps:
       - name: Update release draft
-        uses: release-drafter/release-drafter@v6
+        uses: release-drafter/release-drafter@v7
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

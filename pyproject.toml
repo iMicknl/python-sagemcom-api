@@ -1,50 +1,89 @@
-[tool.poetry]
+[project]
 name = "sagemcom_api"
 version = "1.2.1"
 description = "Python client to interact with SagemCom F@st routers via internal API's."
-authors = ["Mick Vleeshouwer <mick@imick.nl>"]
-license = "MIT"
 readme = "README.md"
-homepage = "https://github.com/iMicknl/python-sagemcom-api"
-repository = "https://github.com/iMicknl/python-sagemcom-api"
+authors = [
+    {name = "Mick Vleeshouwer", email = "mick@imick.nl"},
+]
+license = {text = "MIT"}
+requires-python = ">=3.11"
 keywords = ["sagemcom", "f@st"]
-
-packages = [
-    { include = "sagemcom_api" }
+dependencies = [
+    "aiohttp>=3.7.3,<4.0.0",
+    "pyhumps>=3.0.2,<4.0.0",
+    "backoff>=1.10.0,<3.0",
 ]
 
-[tool.poetry.urls]
+[project.urls]
+homepage = "https://github.com/iMicknl/python-sagemcom-api"
+repository = "https://github.com/iMicknl/python-sagemcom-api"
 "Bug Tracker" = "https://github.com/iMicknl/python-sagemcom-api/issues"
 
-[tool.poetry.dependencies]
-python = ">=3.9,<4.0"
-aiohttp = "^3.7.3"
-pyhumps = "^3.0.2"
-backoff = ">=1.10.0,<3.0"
-backports-strenum = { version = "^1.3.1", python = "<3.11" }
-
-[tool.poetry.dev-dependencies]
-pytest = "^8.4"
-pytest-asyncio = "^1.2.0"
-pytest-aiohttp = "^1.0.5"
-pytest-cov = "^7.0.0"
-pre-commit = "^4.3.0"
-black = "^25.11"
-pylint = "^3.2.7"
-isort = "^5.10.1"
-mypy = "^1.19"
-flake8 = "^7.3.0"
-pyupgrade = "^3.21.0"
+[dependency-groups]
+dev = [
+    "pytest>=8.4,<9.0",
+    "pytest-asyncio>=1.2.0,<2.0",
+    "pytest-aiohttp>=1.0.5,<2.0",
+    "pytest-cov>=7.0.0,<8.0",
+    "prek>=0.3.8,<1.0",
+    "ruff>=0.9.0,<1.0",
+    "mypy>=1.19,<2.0",
+    "ty>=0.0.29,<1.0",
+]
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
-[tool.isort]
-# https://github.com/PyCQA/isort/wiki/isort-Settings
-profile = "black"
-force_sort_within_sections = true
-combine_as_imports = true
+[tool.hatch.build.targets.sdist]
+include = [
+    "sagemcom_api/*",
+]
+
+[tool.hatch.build.targets.wheel]
+packages = ["sagemcom_api"]
+only-packages = true
+
+[tool.ruff]
+line-length = 140
+target-version = "py311"
+
+
+[tool.ruff.lint]
+select = [
+    # pydocstyle
+    "D",
+    # flake8-async
+    "ASYNC",
+    # pycodestyle
+    "E",
+    # Pyflakes
+    "F",
+    # pyupgrade
+    "UP",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # isort
+    "I",
+    # ruff
+    "RUF",
+    # flake8-bandit (security)
+    "S",
+    # flake8-print
+    "T",
+    # flake8-comprehensions
+    "C4",
+]
+ignore = ["E501"] # Line too long
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = [
+    "S101", # assert is standard in tests
+    "S106", # hardcoded passwords are acceptable in test fixtures
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
@@ -61,3 +100,15 @@ markers = [
     "asyncio: mark test as an asyncio test",
     "integration: mark test as an integration test (requires router access)",
 ]
+
+[tool.mypy]
+exclude = ["tests/"]
+ignore_missing_imports = true
+
+[tool.ty.src]
+exclude = ["tests/"]
+
+[tool.ty.rules]
+# This project uses both mypy and ty; mypy's `type: ignore` comments
+# should not be flagged as unused by ty.
+unused-type-ignore-comment = "ignore"
