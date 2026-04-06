@@ -425,7 +425,7 @@ async def test_get_hosts_rest_fallbacks_on_home_400():
 
 @pytest.mark.asyncio
 async def test_reboot_rest_mode():
-    """reboot should call REST endpoint on REST firmware."""
+    """Reboot should call REST endpoint on REST firmware."""
     mock_session = MagicMock(spec=ClientSession)
     mock_session.close = AsyncMock()
 
