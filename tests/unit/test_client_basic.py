@@ -4,8 +4,9 @@
 
 from unittest.mock import AsyncMock, MagicMock
 
-from aiohttp import ClientSession
 import pytest
+from aiohttp import ClientSession
+
 from sagemcom_api.client import SagemcomClient
 from sagemcom_api.enums import ApiMode, EncryptionMethod
 from sagemcom_api.exceptions import AuthenticationException
@@ -370,7 +371,7 @@ async def test_get_hosts_rest_fallbacks_on_home_400():
 
 @pytest.mark.asyncio
 async def test_reboot_rest_mode():
-    """reboot should call REST endpoint on REST firmware."""
+    """Reboot should call REST endpoint on REST firmware."""
     mock_session = MagicMock(spec=ClientSession)
     mock_session.close = AsyncMock()
 

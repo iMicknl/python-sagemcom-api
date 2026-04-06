@@ -14,12 +14,12 @@ from typing import Any
 import backoff
 import humps
 from aiohttp import (
-    CookieJar,
     ClientConnectorError,
     ClientOSError,
     ClientSession,
     ClientTimeout,
     ContentTypeError,
+    CookieJar,
     ServerDisconnectedError,
     TCPConnector,
 )
@@ -94,9 +94,7 @@ class SagemcomClient:
         self.username = username
         self.authentication_method = authentication_method
         self.api_mode = ApiMode(api_mode)
-        self._active_api_mode: ApiMode = (
-            self.api_mode if self.api_mode != ApiMode.AUTO else ApiMode.LEGACY
-        )
+        self._active_api_mode: ApiMode = self.api_mode if self.api_mode != ApiMode.AUTO else ApiMode.LEGACY
         self.password = password
         self._current_nonce = None
         self._password_hash = self.__generate_hash(password)
@@ -113,9 +111,7 @@ class SagemcomClient:
                 headers={"User-Agent": f"{DEFAULT_USER_AGENT}"},
                 timeout=ClientTimeout(DEFAULT_TIMEOUT),
                 cookie_jar=CookieJar(unsafe=True),
-                connector=TCPConnector(
-                    verify_ssl=verify_ssl if verify_ssl is not None else True
-                ),
+                connector=TCPConnector(verify_ssl=verify_ssl if verify_ssl is not None else True),
             )
         )
 
@@ -366,17 +362,13 @@ class SagemcomClient:
         (ClientConnectorError, ClientOSError, ServerDisconnectedError),
         max_tries=5,
     )
-    async def __rest_request(
-        self, method: str, endpoint: str, data: dict[str, Any] | None = None
-    ):
+    async def __rest_request(self, method: str, endpoint: str, data: dict[str, Any] | None = None):
         """Call the REST API using form-encoded payloads."""
         url = f"{self.protocol}://{self.host}{endpoint}"
         payload = urllib.parse.urlencode(data or {})
         request_headers = {"Content-Type": "application/x-www-form-urlencoded"}
 
-        async with self.session.request(
-            method, url, data=payload, headers=request_headers
-        ) as response:
+        async with self.session.request(method, url, data=payload, headers=request_headers) as response:
             if response.status in (200, 204):
                 if response.status == 204:
                     return None
@@ -446,9 +438,7 @@ class SagemcomClient:
             return value.strip().lower() in ("1", "true", "yes", "on", "up")
         return default
 
-    def __build_rest_device(
-        self, entry: dict[str, Any], interface_type: str | None
-    ) -> Device:
+    def __build_rest_device(self, entry: dict[str, Any], interface_type: str | None) -> Device:
         """Map a REST host entry to Device."""
         detected_interface = self.__first_value(
             entry,
@@ -470,21 +460,13 @@ class SagemcomClient:
 
         return Device(
             uid=self.__first_value(entry, "id", "uid"),
-            phys_address=self.__first_value(
-                entry, "macAddress", "mac_address", "phys_address"
-            ),
+            phys_address=self.__first_value(entry, "macAddress", "mac_address", "phys_address"),
             ip_address=self.__first_value(entry, "ipAddress", "ip_address"),
             host_name=self.__first_value(entry, "hostname", "host_name", "name"),
-            user_host_name=self.__first_value(
-                entry, "friendlyname", "friendly_name", "user_host_name"
-            ),
-            active=self.__to_bool(
-                self.__first_value(entry, "active", "isActive"), True
-            ),
+            user_host_name=self.__first_value(entry, "friendlyname", "friendly_name", "user_host_name"),
+            active=self.__to_bool(self.__first_value(entry, "active", "isActive"), True),
             interface_type=interface_type,
-            detected_device_type=self.__first_value(
-                entry, "devicetype", "deviceType", "detected_device_type"
-            ),
+            detected_device_type=self.__first_value(entry, "devicetype", "deviceType", "detected_device_type"),
         )
 
     def __extract_rest_home_hosts(self, data: Any) -> list[Device]:
@@ -584,8 +566,7 @@ class SagemcomClient:
         """Raise when a method is only available on legacy JSON-REQ API."""
         if self._active_api_mode == ApiMode.REST:
             raise NotImplementedError(
-                "This method is not available with REST API mode. "
-                "Use helper methods supported for REST firmware instead."
+                "This method is not available with REST API mode. Use helper methods supported for REST firmware instead."
             )
 
     async def get_encryption_method(self) -> EncryptionMethod:
@@ -809,9 +790,7 @@ class SagemcomClient:
 
             return devices
 
-        data = await self.get_value_by_xpath(
-            "Device/Hosts/Hosts", options={"capability-flags": {"interface": True}}
-        )
+        data = await self.get_value_by_xpath("Device/Hosts/Hosts", options={"capability-flags": {"interface": True}})
         devices = [Device(**d) for d in data]
 
         if only_active:
