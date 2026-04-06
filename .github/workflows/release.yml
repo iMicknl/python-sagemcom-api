@@ -1,4 +1,4 @@
-# This workflow will upload a Python package when a release is published
+# This workflow will upload the package to PyPi when a release is published
 
 name: Publish Python Package (PyPi)
 
@@ -12,32 +12,48 @@ jobs:
     environment: release
 
     permissions:
-      # IMPORTANT: this permission is mandatory for trusted publishing
+      # IMPORTANT: this permission is mandatory for trusted publishing via PyPi
       id-token: write
+      contents: write
 
     steps:
       - uses: actions/checkout@v6
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.x'
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-      - name: Bump project version
+          python-version: "3.x"
+
+      - name: Retrieve version from tag name
+        id: retrieve-version
         run: |
-          tag=${{ github.event.release.tag_name }}
-          version_number=${tag#?}
-          uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version "$version_number"
-      - name: Commit changes
-        uses: EndBug/add-and-commit@v4
-        with:
-          message: "Bump version to ${{ github.event.release.tag_name }}"
-          add: "pyproject.toml"
-          ref: "main"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Build package distribution
+            tag="${{ github.event.release.tag_name }}"
+            version_number="${tag#?}"
+            echo "version: $version_number"
+            echo "version=$version_number" >> "$GITHUB_OUTPUT"
+
+      - name: Bump project version in pyproject.toml and commit changes to current branch and tag
         run: |
-          uv build
-      - name: Publish package distributions to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
+            VERSION=${{ steps.retrieve-version.outputs.version }}
+            uvx --from=toml-cli toml set --toml-path=pyproject.toml project.version $VERSION
+
+            git config --local user.email "action@github.com"
+            git config --local user.name "GitHub Action"
+
+            git add pyproject.toml
+            git commit -m "Bump package version to ${{ steps.retrieve-version.outputs.version }}."
+
+            git tag -f -a ${{ github.event.release.tag_name }} -m "Release ${{ steps.retrieve-version.outputs.version }}."
+            git push origin HEAD:main
+            git push origin -f ${{ github.event.release.tag_name }}
+
+      - name: Build package
+        run: |
+            uv build
+
+      - name: Publish package to PyPI
+        run: |
+            uv publish
