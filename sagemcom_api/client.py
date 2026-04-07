@@ -78,7 +78,6 @@ class SagemcomClient:
         session: ClientSession | None = None,
         ssl: bool | None = False,
         verify_ssl: bool | None = True,
-        keep_keys: bool = False,
     ):
         """Create a SagemCom client.
 
@@ -87,13 +86,11 @@ class SagemcomClient:
         :param password: the password for your Sagemcom router
         :param authentication_method: the auth method of your Sagemcom router
         :param session: use a custom session, for example to configure the timeout
-        :param keep_keys: return response keys as originally written (no snake_case conversion)
         """
         self.host = host
         self.username = username
         self.authentication_method = authentication_method
         self.password = password
-        self.keep_keys = keep_keys
         self._current_nonce = None
         self._password_hash = self.__generate_hash(password)
         self.protocol = "https" if ssl else "http"
@@ -195,7 +192,7 @@ class SagemcomClient:
 
         return value
 
-    def __get_response_value(self, response, index=0, keep_keys: bool | None = None):
+    def __get_response_value(self, response, index=0):
         """Retrieve response value from value."""
         try:
             value = self.__get_response(response, index)["value"]
@@ -204,9 +201,8 @@ class SagemcomClient:
         except IndexError:
             value = None
 
-        # Rewrite result to snake_case unless keep_keys is requested
-        should_keep = keep_keys if keep_keys is not None else self.keep_keys
-        if value is not None and not should_keep:
+        # Rewrite result to snake_case
+        if value is not None:
             value = humps.decamelize(value)
 
         return value
