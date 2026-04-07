@@ -44,6 +44,7 @@ from .exceptions import (
     AuthenticationException,
     BadRequestException,
     InvalidSessionException,
+    LoginConnectionException,
     LoginRetryErrorException,
     LoginTimeoutException,
     MaximumSessionCountException,
@@ -53,7 +54,7 @@ from .exceptions import (
     UnknownPathException,
     UnsupportedHostException,
 )
-from .models import Device, DeviceInfo, PortMapping
+from .models import Device, DeviceInfo, PortMapping, SpeedTestResult
 
 
 async def retry_login(invocation: Mapping[str, Any]) -> None:
@@ -77,6 +78,7 @@ class SagemcomClient:
         session: ClientSession | None = None,
         ssl: bool | None = False,
         verify_ssl: bool | None = True,
+        keep_keys: bool = False,
     ):
         """Create a SagemCom client.
 
@@ -85,11 +87,13 @@ class SagemcomClient:
         :param password: the password for your Sagemcom router
         :param authentication_method: the auth method of your Sagemcom router
         :param session: use a custom session, for example to configure the timeout
+        :param keep_keys: return response keys as originally written (no snake_case conversion)
         """
         self.host = host
         self.username = username
         self.authentication_method = authentication_method
         self.password = password
+        self.keep_keys = keep_keys
         self._current_nonce = None
         self._password_hash = self.__generate_hash(password)
         self.protocol = "https" if ssl else "http"
@@ -191,7 +195,7 @@ class SagemcomClient:
 
         return value
 
-    def __get_response_value(self, response, index=0):
+    def __get_response_value(self, response, index=0, keep_keys: bool | None = None):
         """Retrieve response value from value."""
         try:
             value = self.__get_response(response, index)["value"]
@@ -200,8 +204,9 @@ class SagemcomClient:
         except IndexError:
             value = None
 
-        # Rewrite result to snake_case
-        if value is not None:
+        # Rewrite result to snake_case unless keep_keys is requested
+        should_keep = keep_keys if keep_keys is not None else self.keep_keys
+        if value is not None and not should_keep:
             value = humps.decamelize(value)
 
         return value
@@ -335,6 +340,8 @@ class SagemcomClient:
             raise LoginTimeoutException(
                 "Login request timed-out. This could be caused by using the wrong encryption method, or using a (non) SSL connection."
             ) from exception
+        except (ClientConnectorError, ClientOSError) as exception:
+            raise LoginConnectionException("Unable to connect to the device. Please check the host address.") from exception
 
         data = self.__get_response(response)
 
@@ -552,6 +559,22 @@ class SagemcomClient:
         max_tries=1,
         on_backoff=retry_login,
     )
+    async def get_logs(self) -> str:
+        """Retrieve system logs from Sagemcom F@st device."""
+        actions = {
+            "id": 0,
+            "method": "getVendorLogDownloadURI",
+            "xpath": urllib.parse.quote("Device/DeviceInfo/VendorLogFiles/VendorLogFile[@uid='1']"),
+        }
+
+        response = await self.__api_request_async([actions], False)
+        log_path = response["reply"]["actions"][0]["callbacks"][0]["parameters"]["uri"]
+
+        log_uri = f"{self.protocol}://{self.host}{log_path}"
+        log_response = await self.session.get(log_uri)
+
+        return await log_response.text()
+
     async def reboot(self):
         """Reboot Sagemcom F@st device."""
         action = {
@@ -565,3 +588,32 @@ class SagemcomClient:
         data = self.__get_response_value(response)
 
         return data
+
+    async def run_speed_test(self, block_traffic: bool = False):
+        """Run Speed Test on Sagemcom F@st device."""
+        actions = [
+            {
+                "id": 0,
+                "method": "speedTestClient",
+                "xpath": "Device/IP/Diagnostics/SpeedTest",
+                "parameters": {"BlockTraffic": block_traffic},
+            }
+        ]
+        return await self.__api_request_async(actions, False)
+
+    async def get_speed_test_results(self) -> list[SpeedTestResult]:
+        """Retrieve Speed Test results from Sagemcom F@st device."""
+        ret = await self.get_value_by_xpath("Device/IP/Diagnostics/SpeedTest")
+        history = ret["speed_test"]["history"]
+        if history:
+            timestamps = (int(k) for k in history["timestamp"].split(","))
+            server_address = history["selected_server_address"].split(",")
+            block_traffic = history["block_traffic"].split(",")
+            latency = history["latency"].split(",")
+            upload = (float(k) for k in history["upload"].split(","))
+            download = (float(k) for k in history["download"].split(","))
+            results = [
+                SpeedTestResult(*data) for data in zip(timestamps, server_address, block_traffic, latency, upload, download, strict=True)
+            ]
+            return results
+        return []

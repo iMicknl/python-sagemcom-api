@@ -43,6 +43,10 @@ class LoginTimeoutException(BaseSagemcomException):
     """Raised when a timeout is encountered during login."""
 
 
+class LoginConnectionException(BaseSagemcomException):
+    """Raised when a connection error is encountered during login."""
+
+
 class NonWritableParameterException(BaseSagemcomException):
     """Raised when provided parameter is not writable."""
 

@@ -1,6 +1,7 @@
 """Models for the Sagemcom F@st client."""
 
 import dataclasses
+import time
 from dataclasses import dataclass
 from typing import Any
 
@@ -164,3 +165,26 @@ class PortMapping:
     def id(self):
         """Return unique ID for port mapping."""
         return self.uid
+
+
+@dataclass
+class SpeedTestResult:
+    """Representation of a speedtest result."""
+
+    timestamp: int | str
+    selected_server_address: str
+    block_traffic: bool
+    latency: str
+    upload: float
+    download: float
+
+    def __post_init__(self):
+        """Process data after init."""
+        # Convert timestamp to human-readable string.
+        if isinstance(self.timestamp, int):
+            self.timestamp = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(self.timestamp))
+        self.block_traffic = bool(self.block_traffic)
+
+    def __str__(self) -> str:
+        """Return string representation of speedtest result."""
+        return f"timestamp: {self.timestamp}, latency: {self.latency}, upload: {self.upload}, download: {self.download}"
