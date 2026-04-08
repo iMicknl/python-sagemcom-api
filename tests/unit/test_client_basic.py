@@ -6,7 +6,7 @@ import pytest
 
 from sagemcom_api.client import SagemcomClient
 from sagemcom_api.enums import EncryptionMethod
-from sagemcom_api.exceptions import AuthenticationException
+from sagemcom_api.exceptions import AuthenticationException, UnknownPathException
 
 
 @pytest.mark.asyncio
@@ -123,3 +123,112 @@ async def test_login_with_preconfigured_fixture(mock_client_sha512):
     assert client.authentication_method == EncryptionMethod.SHA512
     assert client._session_id == 12345
     assert client._server_nonce == "abcdef1234567890"
+
+
+@pytest.mark.asyncio
+async def test_get_value_by_xpath_suppresses_unknown_path(
+    mock_session_factory, login_success_response, xpath_unknown_path_error_response
+):
+    """Test that suppress_action_errors=True returns None for UnknownPathException."""
+    mock_session = mock_session_factory([login_success_response, xpath_unknown_path_error_response])
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        authentication_method=EncryptionMethod.MD5,
+        session=mock_session,
+    )
+    await client.login()
+
+    result = await client.get_value_by_xpath("Device/NonExistent", suppress_action_errors=True)
+
+    assert result is None
+
+
+@pytest.mark.asyncio
+async def test_get_value_by_xpath_raises_unknown_path_when_not_suppressed(
+    mock_session_factory, login_success_response, xpath_unknown_path_error_response
+):
+    """Test that suppress_action_errors=False (default) raises UnknownPathException."""
+    mock_session = mock_session_factory([login_success_response, xpath_unknown_path_error_response])
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        authentication_method=EncryptionMethod.MD5,
+        session=mock_session,
+    )
+    await client.login()
+
+    with pytest.raises(UnknownPathException):
+        await client.get_value_by_xpath("Device/NonExistent")
+
+
+@pytest.mark.asyncio
+async def test_get_value_by_xpath_still_raises_auth_error_when_suppressed(
+    mock_session_factory, login_success_response, login_auth_error_response
+):
+    """Test that suppress_action_errors=True still raises AuthenticationException."""
+    mock_session = mock_session_factory([login_success_response, login_auth_error_response])
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        authentication_method=EncryptionMethod.MD5,
+        session=mock_session,
+    )
+    await client.login()
+
+    with pytest.raises(AuthenticationException):
+        await client.get_value_by_xpath("Device/DeviceInfo", suppress_action_errors=True)
+
+
+@pytest.mark.asyncio
+async def test_get_values_by_xpaths_suppresses_unknown_path_per_action(
+    mock_session_factory, login_success_response, xpaths_mixed_errors_response
+):
+    """Test that get_values_by_xpaths with suppress_action_errors=True returns None for
+    unknown-path actions while preserving successful values from other actions."""
+    mock_session = mock_session_factory([login_success_response, xpaths_mixed_errors_response])
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        authentication_method=EncryptionMethod.MD5,
+        session=mock_session,
+    )
+    await client.login()
+
+    result = await client.get_values_by_xpaths(
+        {
+            "mac_address": "Device/DeviceInfo/MACAddress",
+            "model_number": "Device/DeviceInfo/ModelNumber",
+        },
+        suppress_action_errors=True,
+    )
+
+    assert result["mac_address"] == "AA:BB:CC:DD:EE:FF"
+    assert result["model_number"] is None
+
+
+@pytest.mark.asyncio
+async def test_get_values_by_xpaths_still_raises_auth_error_when_suppressed(
+    mock_session_factory, login_success_response, login_auth_error_response
+):
+    """Test that get_values_by_xpaths with suppress_action_errors=True still raises
+    AuthenticationException instead of silently swallowing it."""
+    mock_session = mock_session_factory([login_success_response, login_auth_error_response])
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        authentication_method=EncryptionMethod.MD5,
+        session=mock_session,
+    )
+    await client.login()
+
+    with pytest.raises(AuthenticationException):
+        await client.get_values_by_xpaths(
+            {"mac_address": "Device/DeviceInfo/MACAddress"},
+            suppress_action_errors=True,
+        )

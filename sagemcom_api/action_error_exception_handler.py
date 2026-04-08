@@ -1,6 +1,6 @@
 """Logic to spot and create ActionErrorExceptions."""
 
-from sagemcom_api.const import (
+from .const import (
     XMO_ACCESS_RESTRICTION_ERR,
     XMO_AUTHENTICATION_ERR,
     XMO_LOGIN_RETRY_ERR,
@@ -10,7 +10,7 @@ from sagemcom_api.const import (
     XMO_REQUEST_ACTION_ERR,
     XMO_UNKNOWN_PATH_ERR,
 )
-from sagemcom_api.exceptions import (
+from .exceptions import (
     AccessRestrictionException,
     AuthenticationException,
     LoginRetryErrorException,
@@ -34,25 +34,42 @@ class ActionErrorHandler:
     )
 
     @staticmethod
-    def throw_if(response):
-        """For anywhere that needs the old single-exception behaviour."""
+    def throw_if_error(response, ignore_unknown_path: bool = False) -> None:
+        """Raise the first action-level error, or do nothing if all actions succeeded.
+
+        :param ignore_unknown_path: if True, silently ignore UnknownPathException
+        """
         if response["reply"]["error"]["description"] != XMO_REQUEST_ACTION_ERR:
             return
 
-        actions = response["reply"]["actions"]
-        for action in actions:
+        for action in response["reply"]["actions"]:
             action_error = action["error"]
             action_error_desc = action_error["description"]
-
-            if action_error_desc == XMO_NO_ERR:
-                continue
-
-            raise ActionErrorHandler.from_error_description(action_error, action_error_desc)
+            if action_error_desc != XMO_NO_ERR:
+                exc = ActionErrorHandler.from_error_description(action_error, action_error_desc)
+                if ignore_unknown_path and isinstance(exc, UnknownPathException):
+                    continue
+                raise exc
 
     @staticmethod
-    def is_unknown_exception(desc):
-        """True/false if the ActionError is one of our known types."""
-        return False if desc == XMO_NO_ERR else desc not in ActionErrorHandler.KNOWN_EXCEPTIONS
+    def throw_if_error_at(response, index: int, ignore_unknown_path: bool = False) -> None:
+        """Raise the error for a specific action, or do nothing if it succeeded.
+
+        :param ignore_unknown_path: if True, silently ignore UnknownPathException
+        """
+        try:
+            action_error = response["reply"]["actions"][index]["error"]
+        except (KeyError, IndexError):
+            return
+
+        action_error_desc = action_error["description"]
+        if action_error_desc == XMO_NO_ERR:
+            return
+
+        exc = ActionErrorHandler.from_error_description(action_error, action_error_desc)
+        if ignore_unknown_path and isinstance(exc, UnknownPathException):
+            return
+        raise exc
 
     @staticmethod
     def from_error_description(action_error, action_error_desc):

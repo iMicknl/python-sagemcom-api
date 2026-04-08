@@ -29,7 +29,6 @@ from .const import (
     DEFAULT_USER_AGENT,
     UINT_MAX,
     XMO_INVALID_SESSION_ERR,
-    XMO_NO_ERR,
     XMO_REQUEST_ACTION_ERR,
     XMO_REQUEST_NO_ERR,
 )
@@ -183,19 +182,8 @@ class SagemcomClient:
 
         return value
 
-    def __get_response_value(self, response, index=0, throw_on_action_error: bool = False):
+    def __get_response_value(self, response, index=0):
         """Retrieve response value from value."""
-        if throw_on_action_error:
-            try:
-                error = response["reply"]["actions"][index]["error"]
-            except (KeyError, IndexError):
-                error = None
-
-            if error is not None:
-                error_description = error["description"]
-                if error_description != XMO_NO_ERR:
-                    raise ActionErrorHandler.from_error_description(error, error_description)
-
         try:
             value = self.__get_response(response, index)["value"]
         except KeyError:
@@ -307,12 +295,13 @@ class SagemcomClient:
 
         try:
             response = await self.__api_request_async([actions], True)
-            ActionErrorHandler.throw_if(response)
 
         except TimeoutError as exception:
             raise LoginTimeoutException(
                 "Login request timed-out. This could be caused by using the wrong encryption method, or using a (non) SSL connection."
             ) from exception
+
+        ActionErrorHandler.throw_if_error(response)
 
         data = self.__get_response(response)
 
@@ -328,7 +317,7 @@ class SagemcomClient:
         actions = {"id": 0, "method": "logOut"}
 
         response = await self.__api_request_async([actions], False)
-        ActionErrorHandler.throw_if(response)
+        ActionErrorHandler.throw_if_error(response)
 
         self._session_id = -1
         self._server_nonce = ""
@@ -373,7 +362,7 @@ class SagemcomClient:
         xpath: str,
         options: dict | None = None,
         suppress_action_errors: bool = False,
-    ) -> dict:
+    ) -> Any:
         """Retrieve raw value from router using XPath.
 
         :param xpath: path expression
@@ -387,8 +376,7 @@ class SagemcomClient:
         }
 
         response = await self.__api_request_async([actions], False)
-        if not suppress_action_errors:
-            ActionErrorHandler.throw_if(response)
+        ActionErrorHandler.throw_if_error(response, ignore_unknown_path=suppress_action_errors)
 
         data = self.__get_response_value(response)
 
@@ -427,10 +415,16 @@ class SagemcomClient:
         ]
 
         response = await self.__api_request_async(actions, False)
-        if not suppress_action_errors:
-            ActionErrorHandler.throw_if(response)
 
-        values = [self.__get_response_value(response, i) for i in range(len(xpaths))]
+        if not suppress_action_errors:
+            ActionErrorHandler.throw_if_error(response)
+            values = [self.__get_response_value(response, i) for i in range(len(xpaths))]
+        else:
+            values = []
+            for i in range(len(xpaths)):
+                ActionErrorHandler.throw_if_error_at(response, i, ignore_unknown_path=True)
+                values.append(self.__get_response_value(response, i))
+
         data = dict(zip(xpaths.keys(), values, strict=True))
 
         return data
@@ -462,7 +456,7 @@ class SagemcomClient:
         }
 
         response = await self.__api_request_async([actions], False)
-        ActionErrorHandler.throw_if(response)
+        ActionErrorHandler.throw_if_error(response)
 
         return response
 
@@ -492,7 +486,7 @@ class SagemcomClient:
                     "serial_number": "Device/DeviceInfo/SerialNumber",
                     "software_version": "Device/DeviceInfo/SoftwareVersion",
                 },
-                # missing values converted to empty string
+                # missing values returned as None when action errors are suppressed
                 suppress_action_errors=True,
             )
             data["manufacturer"] = "Sagemcom"
@@ -560,7 +554,7 @@ class SagemcomClient:
         }
 
         response = await self.__api_request_async([action], False)
-        ActionErrorHandler.throw_if(response)
+        ActionErrorHandler.throw_if_error(response)
 
         data = self.__get_response_value(response)
 
