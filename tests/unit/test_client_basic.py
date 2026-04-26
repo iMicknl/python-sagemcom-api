@@ -126,9 +126,7 @@ async def test_login_with_preconfigured_fixture(mock_client_sha512):
 
 
 @pytest.mark.asyncio
-async def test_get_value_by_xpath_suppresses_unknown_path(
-    mock_session_factory, login_success_response, xpath_unknown_path_error_response
-):
+async def test_get_value_by_xpath_suppresses_unknown_path(mock_session_factory, login_success_response, xpath_unknown_path_error_response):
     """Test that suppress_action_errors=True returns None for UnknownPathException."""
     mock_session = mock_session_factory([login_success_response, xpath_unknown_path_error_response])
     client = SagemcomClient(
@@ -187,8 +185,10 @@ async def test_get_value_by_xpath_still_raises_auth_error_when_suppressed(
 async def test_get_values_by_xpaths_suppresses_unknown_path_per_action(
     mock_session_factory, login_success_response, xpaths_mixed_errors_response
 ):
-    """Test that get_values_by_xpaths with suppress_action_errors=True returns None for
-    unknown-path actions while preserving successful values from other actions."""
+    """Test per-action suppression of unknown-path errors.
+
+    Unknown-path actions return None while successful values from other actions are preserved.
+    """
     mock_session = mock_session_factory([login_success_response, xpaths_mixed_errors_response])
     client = SagemcomClient(
         host="192.168.1.1",
@@ -215,8 +215,10 @@ async def test_get_values_by_xpaths_suppresses_unknown_path_per_action(
 async def test_get_values_by_xpaths_still_raises_auth_error_when_suppressed(
     mock_session_factory, login_success_response, login_auth_error_response
 ):
-    """Test that get_values_by_xpaths with suppress_action_errors=True still raises
-    AuthenticationException instead of silently swallowing it."""
+    """Test that auth errors still raise even when suppression is enabled.
+
+    Authentication errors must propagate rather than be silently swallowed.
+    """
     mock_session = mock_session_factory([login_success_response, login_auth_error_response])
     client = SagemcomClient(
         host="192.168.1.1",
