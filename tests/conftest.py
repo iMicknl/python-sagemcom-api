@@ -65,6 +65,18 @@ def xpath_value_response() -> dict[str, Any]:
 
 
 @pytest.fixture
+def xpath_unknown_path_error_response() -> dict[str, Any]:
+    """Mock response for XPath query that returns XMO_UNKNOWN_PATH_ERR."""
+    return load_fixture("xpath_unknown_path_error.json")
+
+
+@pytest.fixture
+def xpaths_mixed_errors_response() -> dict[str, Any]:
+    """Mock response for multi-XPath query with one success and one unknown-path error."""
+    return load_fixture("xpaths_mixed_errors.json")
+
+
+@pytest.fixture
 def mock_session_factory():
     """Create a factory for mock aiohttp ClientSession.
 
