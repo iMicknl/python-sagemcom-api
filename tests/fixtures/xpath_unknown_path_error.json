@@ -1,0 +1,22 @@
+{
+  "reply": {
+    "uid": 0,
+    "id": 1,
+    "error": {
+      "code": 16777236,
+      "description": "XMO_REQUEST_ACTION_ERR"
+    },
+    "actions": [
+      {
+        "uid": 1,
+        "id": 0,
+        "error": {
+          "code": 16777221,
+          "description": "XMO_UNKNOWN_PATH_ERR"
+        },
+        "callbacks": []
+      }
+    ],
+    "events": []
+  }
+}
