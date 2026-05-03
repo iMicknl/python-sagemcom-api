@@ -381,34 +381,14 @@ class SagemcomClient:
 
         return None
 
-    @backoff.on_exception(
-        backoff.expo,
-        (
-            AuthenticationException,
-            LoginRetryErrorException,
-            LoginTimeoutException,
-            InvalidSessionException,
-        ),
-        max_tries=1,
-        on_backoff=retry_login,
-    )
     async def get_value_by_xpath(self, xpath: str, options: dict | None = None) -> dict:
         """Retrieve raw value from router using XPath.
 
         :param xpath: path expression
         :param options: optional options
         """
-        actions = {
-            "id": 0,
-            "method": "getValue",
-            "xpath": urllib.parse.quote(xpath, "/=[]'"),
-            "options": options if options else {},
-        }
-
-        response = await self.__api_request_async([actions], False)
-        data = self.__get_response_value(response)
-
-        return data
+        result = await self.get_values_by_xpaths({"value": xpath}, options)
+        return result["value"]
 
     @backoff.on_exception(
         backoff.expo,
@@ -421,7 +401,7 @@ class SagemcomClient:
         max_tries=1,
         on_backoff=retry_login,
     )
-    async def get_values_by_xpaths(self, xpaths, options: dict | None = None) -> dict:
+    async def get_values_by_xpaths(self, xpaths: dict[str, str], options: dict | None = None) -> dict:
         """Retrieve raw values from router using XPath.
 
         :param xpaths: Dict of key to xpath expression
@@ -431,7 +411,7 @@ class SagemcomClient:
             {
                 "id": i,
                 "method": "getValue",
-                "xpath": urllib.parse.quote(xpath, "/=[]'"),
+                "xpath": urllib.parse.quote(xpath, "/=[]'@\""),
                 "options": options if options else {},
             }
             for i, xpath in enumerate(xpaths.values())
@@ -443,6 +423,15 @@ class SagemcomClient:
 
         return data
 
+    async def set_value_by_xpath(self, xpath: str, value: str, options: dict | None = None) -> dict:
+        """Set value using XPath.
+
+        :param xpath: path expression
+        :param value: value
+        :param options: optional options
+        """
+        return await self.set_values_by_xpaths({xpath: value}, options)
+
     @backoff.on_exception(
         backoff.expo,
         (
@@ -454,23 +443,24 @@ class SagemcomClient:
         max_tries=1,
         on_backoff=retry_login,
     )
-    async def set_value_by_xpath(self, xpath: str, value: str, options: dict | None = None) -> dict:
-        """Retrieve raw value from router using XPath.
+    async def set_values_by_xpaths(self, xpaths: dict[str, str], options: dict | None = None) -> dict:
+        """Set multiple values using XPath.
 
-        :param xpath: path expression
-        :param value: value
+        :param xpaths: Dict of xpath expression to value
         :param options: optional options
         """
-        actions = {
-            "id": 0,
-            "method": "setValue",
-            "xpath": urllib.parse.quote(xpath, "/=[]'"),
-            "parameters": {"value": str(value)},
-            "options": options if options else {},
-        }
+        actions = [
+            {
+                "id": i,
+                "method": "setValue",
+                "xpath": urllib.parse.quote(xpath, "/=[]'@\""),
+                "parameters": {"value": str(value)},
+                "options": options if options else {},
+            }
+            for i, (xpath, value) in enumerate(xpaths.items())
+        ]
 
-        response = await self.__api_request_async([actions], False)
-
+        response = await self.__api_request_async(actions, False)
         return response
 
     @backoff.on_exception(
