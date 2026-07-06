@@ -22,33 +22,24 @@ from aiohttp import (
     TCPConnector,
 )
 
+from .action_error_exception_handler import ActionErrorHandler
 from .const import (
     API_ENDPOINT,
     DEFAULT_TIMEOUT,
     DEFAULT_USER_AGENT,
     UINT_MAX,
-    XMO_ACCESS_RESTRICTION_ERR,
-    XMO_AUTHENTICATION_ERR,
     XMO_INVALID_SESSION_ERR,
-    XMO_LOGIN_RETRY_ERR,
-    XMO_MAX_SESSION_COUNT_ERR,
-    XMO_NO_ERR,
-    XMO_NON_WRITABLE_PARAMETER_ERR,
     XMO_REQUEST_ACTION_ERR,
     XMO_REQUEST_NO_ERR,
-    XMO_UNKNOWN_PATH_ERR,
 )
 from .enums import EncryptionMethod
 from .exceptions import (
-    AccessRestrictionException,
     AuthenticationException,
     BadRequestException,
     InvalidSessionException,
     LoginConnectionException,
     LoginRetryErrorException,
     LoginTimeoutException,
-    MaximumSessionCountException,
-    NonWritableParameterException,
     UnauthorizedException,
     UnknownException,
     UnknownPathException,
@@ -240,37 +231,12 @@ class SagemcomClient:
                 self._request_id = -1
                 raise InvalidSessionException(error)
 
-            # Error in one of the actions
+            # Error in one or more of the actions. Leave this to the layer
+            # above (via ActionErrorHandler), since a request may contain
+            # multiple actions and the caller may want to react per-action
+            # (e.g. suppress unknown-path errors for optional values).
             if error["description"] == XMO_REQUEST_ACTION_ERR:
-                # pylint:disable=fixme
-                # TODO How to support multiple actions + error handling?
-                actions = result["reply"]["actions"]
-                for action in actions:
-                    action_error = action["error"]
-                    action_error_desc = action_error["description"]
-
-                    if action_error_desc == XMO_NO_ERR:
-                        continue
-
-                    if action_error_desc == XMO_AUTHENTICATION_ERR:
-                        raise AuthenticationException(action_error)
-
-                    if action_error_desc == XMO_ACCESS_RESTRICTION_ERR:
-                        raise AccessRestrictionException(action_error)
-
-                    if action_error_desc == XMO_NON_WRITABLE_PARAMETER_ERR:
-                        raise NonWritableParameterException(action_error)
-
-                    if action_error_desc == XMO_UNKNOWN_PATH_ERR:
-                        raise UnknownPathException(action_error)
-
-                    if action_error_desc == XMO_MAX_SESSION_COUNT_ERR:
-                        raise MaximumSessionCountException(action_error)
-
-                    if action_error_desc == XMO_LOGIN_RETRY_ERR:
-                        raise LoginRetryErrorException(action_error)
-
-                    raise UnknownException(action_error)
+                pass
 
             return result
 
@@ -339,6 +305,8 @@ class SagemcomClient:
         except (ClientConnectorError, ClientOSError) as exception:
             raise LoginConnectionException("Unable to connect to the device. Please check the host address.") from exception
 
+        ActionErrorHandler.throw_if_error(response)
+
         data = self.__get_response(response)
 
         if data["id"] is not None and data["nonce"] is not None:
@@ -352,7 +320,8 @@ class SagemcomClient:
         """Log out of the Sagemcom F@st device."""
         actions = {"id": 0, "method": "logOut"}
 
-        await self.__api_request_async([actions], False)
+        response = await self.__api_request_async([actions], False)
+        ActionErrorHandler.throw_if_error(response)
 
         self._session_id = -1
         self._server_nonce = ""
@@ -381,13 +350,20 @@ class SagemcomClient:
 
         return None
 
-    async def get_value_by_xpath(self, xpath: str, options: dict | None = None) -> dict:
+    async def get_value_by_xpath(
+        self,
+        xpath: str,
+        options: dict | None = None,
+        suppress_action_errors: bool = False,
+    ) -> Any:
         """Retrieve raw value from router using XPath.
 
         :param xpath: path expression
         :param options: optional options
+        :param suppress_action_errors: if True, return None instead of raising
+            when the path is unknown (other action errors are still raised)
         """
-        result = await self.get_values_by_xpaths({"value": xpath}, options)
+        result = await self.get_values_by_xpaths({"value": xpath}, options, suppress_action_errors)
         return result["value"]
 
     @backoff.on_exception(
@@ -401,11 +377,18 @@ class SagemcomClient:
         max_tries=1,
         on_backoff=retry_login,
     )
-    async def get_values_by_xpaths(self, xpaths: dict[str, str], options: dict | None = None) -> dict:
+    async def get_values_by_xpaths(
+        self,
+        xpaths: dict[str, str],
+        options: dict | None = None,
+        suppress_action_errors: bool = False,
+    ) -> dict:
         """Retrieve raw values from router using XPath.
 
         :param xpaths: Dict of key to xpath expression
         :param options: optional options
+        :param suppress_action_errors: if True, unknown-path actions return None
+            instead of raising, while other action errors are still raised
         """
         actions = [
             {
@@ -418,7 +401,16 @@ class SagemcomClient:
         ]
 
         response = await self.__api_request_async(actions, False)
-        values = [self.__get_response_value(response, i) for i in range(len(xpaths))]
+
+        if not suppress_action_errors:
+            ActionErrorHandler.throw_if_error(response)
+            values = [self.__get_response_value(response, i) for i in range(len(xpaths))]
+        else:
+            values = []
+            for i in range(len(xpaths)):
+                ActionErrorHandler.throw_if_error_at(response, i, ignore_unknown_path=True)
+                values.append(self.__get_response_value(response, i))
+
         data = dict(zip(xpaths.keys(), values, strict=True))
 
         return data
@@ -461,6 +453,8 @@ class SagemcomClient:
         ]
 
         response = await self.__api_request_async(actions, False)
+        ActionErrorHandler.throw_if_error(response)
+
         return response
 
     @backoff.on_exception(
@@ -488,7 +482,9 @@ class SagemcomClient:
                     "product_class": "Device/DeviceInfo/ProductClass",
                     "serial_number": "Device/DeviceInfo/SerialNumber",
                     "software_version": "Device/DeviceInfo/SoftwareVersion",
-                }
+                },
+                # missing values are returned as None when action errors are suppressed
+                suppress_action_errors=True,
             )
             data["manufacturer"] = "Sagemcom"
 
@@ -554,6 +550,8 @@ class SagemcomClient:
         }
 
         response = await self.__api_request_async([actions], False)
+        ActionErrorHandler.throw_if_error(response)
+
         log_path = response["reply"]["actions"][0]["callbacks"][0]["parameters"]["uri"]
 
         log_uri = f"{self.protocol}://{self.host}{log_path}"
@@ -571,6 +569,8 @@ class SagemcomClient:
         }
 
         response = await self.__api_request_async([action], False)
+        ActionErrorHandler.throw_if_error(response)
+
         data = self.__get_response_value(response)
 
         return data
@@ -585,7 +585,10 @@ class SagemcomClient:
                 "parameters": {"BlockTraffic": block_traffic},
             }
         ]
-        return await self.__api_request_async(actions, False)
+        response = await self.__api_request_async(actions, False)
+        ActionErrorHandler.throw_if_error(response)
+
+        return response
 
     async def get_speed_test_results(self) -> list[SpeedTestResult]:
         """Retrieve Speed Test results from Sagemcom F@st device."""
