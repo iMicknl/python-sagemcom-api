@@ -1,0 +1,127 @@
+{
+  "reply": {
+    "uid": 0,
+    "id": 1,
+    "error": {
+      "code": 16777236,
+      "description": "XMO_REQUEST_ACTION_ERR"
+    },
+    "actions": [
+      {
+        "uid": 1,
+        "id": 0,
+        "error": {
+          "code": 16777238,
+          "description": "XMO_NO_ERR"
+        },
+        "callbacks": [
+          {
+            "uid": 1,
+            "result": {
+              "code": 16777238,
+              "description": "XMO_NO_ERR"
+            },
+            "xpath": "Device/DeviceInfo/MACAddress",
+            "parameters": {
+              "value": "AA:BB:CC:DD:EE:FF"
+            }
+          }
+        ]
+      },
+      {
+        "uid": 2,
+        "id": 1,
+        "error": {
+          "code": 16777221,
+          "description": "XMO_UNKNOWN_PATH_ERR"
+        },
+        "callbacks": []
+      },
+      {
+        "uid": 3,
+        "id": 2,
+        "error": {
+          "code": 16777238,
+          "description": "XMO_NO_ERR"
+        },
+        "callbacks": [
+          {
+            "uid": 3,
+            "result": {
+              "code": 16777238,
+              "description": "XMO_NO_ERR"
+            },
+            "xpath": "Device/DeviceInfo/ProductClass",
+            "parameters": {
+              "value": "F5364"
+            }
+          }
+        ]
+      },
+      {
+        "uid": 4,
+        "id": 3,
+        "error": {
+          "code": 16777238,
+          "description": "XMO_NO_ERR"
+        },
+        "callbacks": [
+          {
+            "uid": 4,
+            "result": {
+              "code": 16777238,
+              "description": "XMO_NO_ERR"
+            },
+            "xpath": "Device/DeviceInfo/ProductClass",
+            "parameters": {
+              "value": "F5364"
+            }
+          }
+        ]
+      },
+      {
+        "uid": 5,
+        "id": 4,
+        "error": {
+          "code": 16777238,
+          "description": "XMO_NO_ERR"
+        },
+        "callbacks": [
+          {
+            "uid": 5,
+            "result": {
+              "code": 16777238,
+              "description": "XMO_NO_ERR"
+            },
+            "xpath": "Device/DeviceInfo/SerialNumber",
+            "parameters": {
+              "value": "SN123456789"
+            }
+          }
+        ]
+      },
+      {
+        "uid": 6,
+        "id": 5,
+        "error": {
+          "code": 16777238,
+          "description": "XMO_NO_ERR"
+        },
+        "callbacks": [
+          {
+            "uid": 6,
+            "result": {
+              "code": 16777238,
+              "description": "XMO_NO_ERR"
+            },
+            "xpath": "Device/DeviceInfo/SoftwareVersion",
+            "parameters": {
+              "value": "1.2.3"
+            }
+          }
+        ]
+      }
+    ],
+    "events": []
+  }
+}
