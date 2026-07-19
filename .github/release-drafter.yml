@@ -1,20 +1,27 @@
 name-template: 'v$NEXT_PATCH_VERSION'
 tag-template: 'v$NEXT_PATCH_VERSION'
-exclude-labels:
-  - 'exclude-from-changelog'
 categories:
   - title: '⚠️ Breaking changes'
-    label: 'breaking'
+    when:
+      label: 'breaking'
   - title: '🚀 Features'
-    label: 'feature'
+    when:
+      label: 'feature'
   - title: '✨ Enhancement'
-    label: 'enhancement'
+    when:
+      label: 'enhancement'
   - title: '📘 Documentation'
-    label: 'documentation'
+    when:
+      label: 'documentation'
   - title: '🐛 Bug Fixes'
-    label: 'bug'
+    when:
+      label: 'bug'
   - title: '📦 Dependencies'
-    label: 'dependencies'
+    when:
+      label: 'dependencies'
+  - type: 'pre-exclude'
+    when:
+      label: 'exclude-from-changelog'
 
 autolabeler:
   - label: 'feature'
