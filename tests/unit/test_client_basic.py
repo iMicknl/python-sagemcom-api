@@ -2,11 +2,37 @@
 
 # pylint: disable=protected-access
 
+from unittest.mock import AsyncMock, MagicMock
+
 import pytest
+from aiohttp import ClientSession
 
 from sagemcom_api.client import SagemcomClient
 from sagemcom_api.enums import EncryptionMethod
 from sagemcom_api.exceptions import AuthenticationException, UnknownPathException
+
+
+@pytest.mark.asyncio
+async def test_response_with_invalid_utf8_is_parsed():
+    """Test malformed UTF-8 in a router response does not discard valid JSON."""
+    response_body = b'{"reply":{"error":{"description":"XMO_REQUEST_NO_ERR"},"value":"invalid \x8e byte"}}'
+    invalid_byte = response_body.index(b"\x8e")
+    decode_error = UnicodeDecodeError("utf-8", response_body, invalid_byte, invalid_byte + 1, "invalid start byte")
+
+    response = AsyncMock()
+    response.status = 200
+    response.json = AsyncMock(side_effect=decode_error)
+    response.read = AsyncMock(return_value=response_body)
+    response.__aenter__ = AsyncMock(return_value=response)
+    response.__aexit__ = AsyncMock(return_value=None)
+
+    session = MagicMock(spec=ClientSession)
+    session.post.return_value = response
+    client = SagemcomClient(host="192.168.1.1", username="admin", password="admin", session=session)
+
+    result = await client._SagemcomClient__post("http://192.168.1.1/ws", {})
+
+    assert result["reply"]["value"] == "invalid � byte"
 
 
 @pytest.mark.asyncio

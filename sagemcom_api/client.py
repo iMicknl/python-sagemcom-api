@@ -228,7 +228,11 @@ class SagemcomClient:
                 result = await response.text()
                 raise UnknownException(result)
 
-            result = await response.json()
+            try:
+                result = await response.json()
+            except UnicodeDecodeError:
+                # Some router firmware emits otherwise valid JSON containing non-UTF-8 bytes.
+                result = json.loads((await response.read()).decode("utf-8", errors="replace"))
             error = self.__get_response_error(result)
 
             # No errors
