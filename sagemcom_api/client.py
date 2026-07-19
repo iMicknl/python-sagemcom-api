@@ -29,6 +29,7 @@ from .const import (
     UINT_MAX,
     XMO_ACCESS_RESTRICTION_ERR,
     XMO_AUTHENTICATION_ERR,
+    XMO_INVALID_PATH_ERR,
     XMO_INVALID_SESSION_ERR,
     XMO_LOGIN_RETRY_ERR,
     XMO_MAX_SESSION_COUNT_ERR,
@@ -261,7 +262,7 @@ class SagemcomClient:
                     if action_error_desc == XMO_NON_WRITABLE_PARAMETER_ERR:
                         raise NonWritableParameterException(action_error)
 
-                    if action_error_desc == XMO_UNKNOWN_PATH_ERR:
+                    if action_error_desc in (XMO_INVALID_PATH_ERR, XMO_UNKNOWN_PATH_ERR):
                         raise UnknownPathException(action_error)
 
                     if action_error_desc == XMO_MAX_SESSION_COUNT_ERR:
