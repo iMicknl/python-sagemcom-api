@@ -6,7 +6,7 @@ import pytest
 
 from sagemcom_api.client import SagemcomClient
 from sagemcom_api.enums import EncryptionMethod
-from sagemcom_api.exceptions import AuthenticationException
+from sagemcom_api.exceptions import AuthenticationException, UnknownPathException
 
 
 @pytest.mark.asyncio
@@ -101,6 +101,30 @@ async def test_get_value_by_xpath_url_encoding(mock_session_factory, login_succe
     # Verify XPath was properly URL-encoded in the request
     # Note: Detailed XPath encoding validation (safe characters /=[]')
     # will be covered later
+
+
+@pytest.mark.asyncio
+async def test_get_value_by_xpath_invalid_path(mock_session_factory, xpath_invalid_path_response):
+    """Test XMO_INVALID_PATH_ERR raises UnknownPathException with error details."""
+    mock_session = mock_session_factory([xpath_invalid_path_response])
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        authentication_method=EncryptionMethod.MD5,
+        session=mock_session,
+    )
+
+    with pytest.raises(UnknownPathException) as exc_info:
+        await client.get_value_by_xpath("Device/Unsupported/Path")
+
+    assert exc_info.value.args == (
+        {
+            "code": 16777242,
+            "description": "XMO_INVALID_PATH_ERR",
+        },
+    )
+    assert mock_session.post.call_count == 1
 
 
 @pytest.mark.asyncio

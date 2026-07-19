@@ -65,6 +65,12 @@ def xpath_value_response() -> dict[str, Any]:
 
 
 @pytest.fixture
+def xpath_invalid_path_response() -> dict[str, Any]:
+    """Mock response for an invalid XPath error."""
+    return load_fixture("xpath_invalid_path.json")
+
+
+@pytest.fixture
 def mock_session_factory():
     """Create a factory for mock aiohttp ClientSession.
 
