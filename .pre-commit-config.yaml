@@ -34,6 +34,8 @@ repos:
         language: system
         types: [ python ]
         exclude: tests
+        # mypy 2.x's SQLite cache isn't concurrency-safe; force a single process.
+        require_serial: true
       - id: ty
         name: ty check
         entry: uv run ty check .
