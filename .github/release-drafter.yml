@@ -16,6 +16,24 @@ categories:
   - title: '📦 Dependencies'
     label: 'dependencies'
 
+autolabeler:
+  - label: 'feature'
+    branch:
+      - '/^feature\//'
+      - '/^feat\//'
+  - label: 'enhancement'
+    branch:
+      - '/^enhancement\//'
+  - label: 'bug'
+    branch:
+      - '/^fix\//'
+  - label: 'breaking'
+    branch:
+      - '/^breaking\//'
+  - label: 'documentation'
+    branch:
+      - '/^doc\//'
+
 template: |
   ## What's changed
   $CHANGES
