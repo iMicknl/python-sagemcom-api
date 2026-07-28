@@ -54,3 +54,6 @@ jobs:
         env:
           SKIP: ${{ github.ref == 'refs/heads/main' && 'no-commit-to-branch' || '' }}
         run: uv run prek run --show-diff-on-failure --color=always --all-files
+
+      - name: Run pytest
+        run: uv run pytest -q
