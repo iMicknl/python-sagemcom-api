@@ -523,6 +523,22 @@ class SagemcomClient:
 
         return [self.__build_rest_device(entry, None) for entry in hosts]
 
+    @staticmethod
+    def __is_unsupported_rest_endpoint(exception: Exception, endpoint: str) -> bool:
+        """Recognize responses that explicitly reject a REST endpoint."""
+        if isinstance(exception, UnsupportedHostException):
+            return True
+        if not isinstance(exception, BadRequestException):
+            return False
+
+        try:
+            payload = json.loads(str(exception))
+        except (json.JSONDecodeError, TypeError):
+            return False
+
+        details = payload.get("exception") if isinstance(payload, dict) else None
+        return isinstance(details, dict) and details.get("domain") == endpoint
+
     def __should_fallback_to_rest(self, exception: Exception) -> bool:
         """Return True when legacy API failure indicates a REST-only router."""
         if isinstance(exception, UnsupportedHostException):
@@ -723,17 +739,22 @@ class SagemcomClient:
         """Retrieve information about Sagemcom F@st device."""
         if self._active_api_mode == ApiMode.REST:
             data = await self.__rest_request("GET", "/api/v1/device")
-            if not data or not isinstance(data, list):
+            if not isinstance(data, list) or not data or not isinstance(data[0], dict):
                 raise UnknownException("Invalid response from /api/v1/device")
 
-            device = data[0].get("device", {})
+            device = data[0].get("device")
+            if not isinstance(device, dict):
+                raise UnknownException("Invalid response from /api/v1/device")
+
+            running = device.get("running")
+            software_version = running.get("version") if isinstance(running, dict) else None
             return DeviceInfo(
                 mac_address=device.get("wan_mac_address"),
                 serial_number=device.get("serialnumber"),
                 model_name=device.get("modelname"),
                 model_number=device.get("modelname"),
                 product_class=device.get("modelname"),
-                software_version=device.get("running", {}).get("version"),
+                software_version=software_version,
                 hardware_version=device.get("hardware_version"),
                 manufacturer="Sagemcom",
                 up_time=device.get("uptime"),
@@ -779,30 +800,28 @@ class SagemcomClient:
     async def get_hosts(self, only_active: bool | None = False) -> list[Device]:
         """Retrieve hosts connected to Sagemcom F@st device."""
         if self._active_api_mode == ApiMode.REST:
-            rest_errors: list[Exception] = []
-            devices: list[Device] = []
-
-            for endpoint, parser in (
-                ("/api/v1/home", self.__extract_rest_home_hosts),
-                ("/api/v1/hosts", self.__extract_rest_hosts),
-            ):
-                try:
-                    data = await self.__rest_request("GET", endpoint)
-                    devices = parser(data)
-                    break
-                except (
-                    UnknownException,
-                    UnsupportedHostException,
-                    AuthenticationException,
-                ) as exception:
-                    rest_errors.append(exception)
+            home_endpoint = "/api/v1/home"
+            try:
+                home_data = await self.__rest_request("GET", home_endpoint)
+            except (BadRequestException, UnsupportedHostException) as exception:
+                if not self.__is_unsupported_rest_endpoint(exception, home_endpoint):
+                    raise
             else:
-                if rest_errors:
-                    raise rest_errors[-1]
-                raise UnknownException("Unable to retrieve hosts using REST endpoints")
+                try:
+                    devices = self.__extract_rest_home_hosts(home_data)
+                except UnknownException:
+                    devices = []
+
+                if devices:
+                    if only_active:
+                        return [device for device in devices if device.active is True]
+                    return devices
+
+            hosts_data = await self.__rest_request("GET", "/api/v1/hosts")
+            devices = self.__extract_rest_hosts(hosts_data)
 
             if only_active:
-                return [d for d in devices if d.active is True]
+                return [device for device in devices if device.active is True]
 
             return devices
 

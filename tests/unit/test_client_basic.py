@@ -503,6 +503,72 @@ async def test_legacy_mode_never_probes_rest_during_encryption_detection():
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "payload",
+    [
+        {},
+        [],
+        ["not a mapping"],
+        [{"device": []}],
+    ],
+)
+async def test_device_info_rest_rejects_malformed_shapes(payload):
+    """Malformed required REST device containers should raise a library error."""
+    response = AsyncMock()
+    response.status = 200
+    response.json = AsyncMock(return_value=payload)
+    response.__aenter__ = AsyncMock(return_value=response)
+    response.__aexit__ = AsyncMock(return_value=None)
+
+    session = MagicMock(spec=ClientSession)
+    session.request.return_value = response
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        session=session,
+        api_mode=ApiMode.REST,
+    )
+
+    with pytest.raises(UnknownException, match="/api/v1/device"):
+        await client.get_device_info()
+
+
+@pytest.mark.asyncio
+async def test_device_info_rest_ignores_malformed_optional_running():
+    """Malformed optional running data should omit the software version."""
+    response = AsyncMock()
+    response.status = 200
+    response.json = AsyncMock(
+        return_value=[
+            {
+                "device": {
+                    "wan_mac_address": "aa:bb:cc:dd:ee:ff",
+                    "running": [],
+                }
+            }
+        ]
+    )
+    response.__aenter__ = AsyncMock(return_value=response)
+    response.__aexit__ = AsyncMock(return_value=None)
+
+    session = MagicMock(spec=ClientSession)
+    session.request.return_value = response
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        session=session,
+        api_mode=ApiMode.REST,
+    )
+
+    device_info = await client.get_device_info()
+
+    assert device_info.mac_address == "aa:bb:cc:dd:ee:ff"
+    assert device_info.software_version is None
+
+
+@pytest.mark.asyncio
 async def test_get_hosts_rest_mode():
     """get_hosts should parse wifi and ethernet devices on REST firmware."""
     mock_session = MagicMock(spec=ClientSession)
@@ -673,6 +739,75 @@ async def test_get_hosts_rest_fallbacks_on_home_400():
     assert len(devices) == 1
     assert devices[0].host_name == "phone"
     assert devices[0].interface_type == "wifi"
+
+
+@pytest.mark.asyncio
+async def test_hosts_rest_fallback_does_not_swallow_authentication_errors():
+    """Authentication failures from the preferred endpoint should propagate."""
+    response = AsyncMock()
+    response.status = 401
+    response.text = AsyncMock(return_value="unauthorized")
+    response.__aenter__ = AsyncMock(return_value=response)
+    response.__aexit__ = AsyncMock(return_value=None)
+
+    session = MagicMock(spec=ClientSession)
+    session.request.return_value = response
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        session=session,
+        api_mode=ApiMode.REST,
+    )
+
+    with pytest.raises(UnauthorizedException, match="unauthorized"):
+        await client.get_hosts()
+
+    assert session.request.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_hosts_rest_fallback_does_not_swallow_transport_errors():
+    """Transport failures from the preferred endpoint should propagate."""
+    session = MagicMock(spec=ClientSession)
+    session.request.side_effect = ConnectionError("transport failed")
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        session=session,
+        api_mode=ApiMode.REST,
+    )
+
+    with pytest.raises(ConnectionError, match="transport failed"):
+        await client.get_hosts()
+
+    assert session.request.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_hosts_rest_fallback_does_not_swallow_unrelated_bad_request():
+    """Only the known unsupported-home response should trigger fallback."""
+    response = AsyncMock()
+    response.status = 400
+    response.text = AsyncMock(return_value='{"exception":{"domain":"other"}}')
+    response.__aenter__ = AsyncMock(return_value=response)
+    response.__aexit__ = AsyncMock(return_value=None)
+
+    session = MagicMock(spec=ClientSession)
+    session.request.return_value = response
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        session=session,
+        api_mode=ApiMode.REST,
+    )
+
+    with pytest.raises(BadRequestException):
+        await client.get_hosts()
+
+    assert session.request.call_count == 1
 
 
 @pytest.mark.asyncio
