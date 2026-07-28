@@ -67,10 +67,10 @@ class SagemcomClient:
         username: str,
         password: str,
         authentication_method: EncryptionMethod | None = None,
-        api_mode: ApiMode | str = ApiMode.AUTO,
         session: ClientSession | None = None,
         ssl: bool | None = False,
         verify_ssl: bool | None = True,
+        api_mode: ApiMode | str = ApiMode.AUTO,
     ):
         """Create a SagemCom client.
 
@@ -78,8 +78,8 @@ class SagemcomClient:
         :param username: the username for your Sagemcom router
         :param password: the password for your Sagemcom router
         :param authentication_method: the auth method of your Sagemcom router
-        :param api_mode: one of auto, legacy or rest
         :param session: use a custom session, for example to configure the timeout
+        :param api_mode: one of auto, legacy or rest
         """
         self.host = host
         self.username = username

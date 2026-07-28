@@ -24,6 +24,25 @@ from sagemcom_api.exceptions import (
 )
 
 
+def test_constructor_preserves_legacy_positional_argument_order():
+    """Existing positional session and TLS arguments should keep their meaning."""
+    session = MagicMock(spec=ClientSession)
+
+    client = SagemcomClient(
+        "192.168.1.1",
+        "admin",
+        "password",
+        EncryptionMethod.MD5,
+        session,
+        True,
+        False,
+    )
+
+    assert client.session is session
+    assert client.protocol == "https"
+    assert client.api_mode == ApiMode.AUTO
+
+
 @pytest.mark.asyncio
 async def test_response_with_invalid_utf8_is_parsed():
     """Test malformed UTF-8 in a router response does not discard valid JSON."""
