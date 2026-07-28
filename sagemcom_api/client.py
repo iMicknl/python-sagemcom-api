@@ -353,10 +353,14 @@ class SagemcomClient:
     async def __rest_request(self, method: str, endpoint: str, data: dict[str, Any] | None = None):
         """Call the REST API using form-encoded payloads."""
         url = f"{self.protocol}://{self.host}{endpoint}"
-        payload = urllib.parse.urlencode(data or {})
-        request_headers = {"Content-Type": "application/x-www-form-urlencoded"}
+        method = method.upper()
+        request_kwargs: dict[str, Any] = {}
+        if method in ("GET", "HEAD"):
+            request_kwargs["params"] = data or {}
+        elif method in ("POST", "PUT", "PATCH"):
+            request_kwargs["data"] = data or {}
 
-        async with self.session.request(method, url, data=payload, headers=request_headers) as response:
+        async with self.session.request(method, url, **request_kwargs) as response:
             if response.status in (200, 204):
                 if response.status == 204:
                     return None
@@ -373,7 +377,7 @@ class SagemcomClient:
                 raise UnsupportedHostException(result)
 
             if response.status == 400:
-                raise AuthenticationException(result)
+                raise BadRequestException(result)
 
             raise UnknownException(result)
 

@@ -12,9 +12,11 @@ from sagemcom_api.client import SagemcomClient
 from sagemcom_api.enums import ApiMode, EncryptionMethod
 from sagemcom_api.exceptions import (
     AuthenticationException,
+    BadRequestException,
     InvalidSessionException,
     LoginRetryErrorException,
     NonWritableParameterException,
+    UnauthorizedException,
     UnknownPathException,
 )
 
@@ -40,6 +42,107 @@ async def test_response_with_invalid_utf8_is_parsed():
     result = await client._SagemcomClient__post("http://192.168.1.1/ws", {})
 
     assert result["reply"]["value"] == "invalid � byte"
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("method", ["get", "HEAD"])
+async def test_rest_request_query_methods_use_params(method):
+    """GET and HEAD requests should carry values in the query string."""
+    response = AsyncMock()
+    response.status = 204
+    response.__aenter__ = AsyncMock(return_value=response)
+    response.__aexit__ = AsyncMock(return_value=None)
+
+    session = MagicMock(spec=ClientSession)
+    session.request.return_value = response
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        session=session,
+    )
+    request_data = {"filter": "online devices"}
+
+    await client._SagemcomClient__rest_request(method, "/api/v1/hosts", request_data)
+
+    session.request.assert_called_once_with(
+        method.upper(),
+        "http://192.168.1.1/api/v1/hosts",
+        params=request_data,
+    )
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("method", ["post", "PUT", "patch"])
+async def test_rest_request_body_methods_use_form_data(method):
+    """Body methods should pass mappings as form data."""
+    response = AsyncMock()
+    response.status = 204
+    response.__aenter__ = AsyncMock(return_value=response)
+    response.__aexit__ = AsyncMock(return_value=None)
+
+    session = MagicMock(spec=ClientSession)
+    session.request.return_value = response
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        session=session,
+    )
+    request_data = {"login": "admin", "password": "secret value"}
+
+    await client._SagemcomClient__rest_request(method, "/api/v1/login", request_data)
+
+    session.request.assert_called_once_with(
+        method.upper(),
+        "http://192.168.1.1/api/v1/login",
+        data=request_data,
+    )
+
+
+@pytest.mark.asyncio
+async def test_rest_request_bad_request_raises_bad_request_exception():
+    """HTTP 400 should remain distinct from authentication failures."""
+    response = AsyncMock()
+    response.status = 400
+    response.text = AsyncMock(return_value="bad request")
+    response.__aenter__ = AsyncMock(return_value=response)
+    response.__aexit__ = AsyncMock(return_value=None)
+
+    session = MagicMock(spec=ClientSession)
+    session.request.return_value = response
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        session=session,
+    )
+
+    with pytest.raises(BadRequestException, match="bad request"):
+        await client._SagemcomClient__rest_request("GET", "/api/v1/hosts")
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("status", [401, 403])
+async def test_rest_request_unauthorized_statuses_raise_unauthorized(status):
+    """HTTP authentication statuses should raise UnauthorizedException."""
+    response = AsyncMock()
+    response.status = status
+    response.text = AsyncMock(return_value="unauthorized")
+    response.__aenter__ = AsyncMock(return_value=response)
+    response.__aexit__ = AsyncMock(return_value=None)
+
+    session = MagicMock(spec=ClientSession)
+    session.request.return_value = response
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        session=session,
+    )
+
+    with pytest.raises(UnauthorizedException, match="unauthorized"):
+        await client._SagemcomClient__rest_request("GET", "/api/v1/hosts")
 
 
 @pytest.mark.asyncio
