@@ -633,7 +633,14 @@ async def test_get_hosts_rest_mode():
 
 
 @pytest.mark.asyncio
-async def test_get_hosts_rest_fallbacks_to_hosts_endpoint():
+@pytest.mark.parametrize(
+    "home_payload",
+    [
+        [{"unexpected": "shape"}],
+        [{"wirelessListDevice": None}],
+    ],
+)
+async def test_get_hosts_rest_fallbacks_to_hosts_endpoint(home_payload):
     """/api/v1/hosts should be used when /api/v1/home response is invalid."""
     mock_session = MagicMock(spec=ClientSession)
     mock_session.close = AsyncMock()
@@ -646,7 +653,7 @@ async def test_get_hosts_rest_fallbacks_to_hosts_endpoint():
 
     home_response = AsyncMock()
     home_response.status = 200
-    home_response.json = AsyncMock(return_value=[{"unexpected": "shape"}])
+    home_response.json = AsyncMock(return_value=home_payload)
     home_response.__aenter__ = AsyncMock(return_value=home_response)
     home_response.__aexit__ = AsyncMock(return_value=None)
 

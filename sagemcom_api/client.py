@@ -490,13 +490,16 @@ class SagemcomClient:
             raise UnknownException("Invalid response from /api/v1/home")
 
         devices: list[Device] = []
-        for entry in home.get("wirelessListDevice", []):
-            if isinstance(entry, dict):
-                devices.append(self.__build_rest_device(entry, "wifi"))
-
-        for entry in home.get("ethernetListDevice", []):
-            if isinstance(entry, dict):
-                devices.append(self.__build_rest_device(entry, "ethernet"))
+        for key, interface_type in (
+            ("wirelessListDevice", "wifi"),
+            ("ethernetListDevice", "ethernet"),
+        ):
+            entries = home.get(key, [])
+            if not isinstance(entries, list):
+                raise UnknownException("Invalid response from /api/v1/home")
+            for entry in entries:
+                if isinstance(entry, dict):
+                    devices.append(self.__build_rest_device(entry, interface_type))
 
         return devices
 
