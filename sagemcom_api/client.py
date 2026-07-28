@@ -95,16 +95,29 @@ class SagemcomClient:
         self._session_id = 0
         self._request_id = -1
 
-        self.session = (
-            session
-            if session
-            else ClientSession(
-                headers={"User-Agent": f"{DEFAULT_USER_AGENT}"},
-                timeout=ClientTimeout(DEFAULT_TIMEOUT),
-                cookie_jar=CookieJar(unsafe=True),
-                connector=TCPConnector(verify_ssl=verify_ssl if verify_ssl is not None else True),
-            )
+        self._session_owned = session is None
+        self._verify_ssl = verify_ssl if verify_ssl is not None else True
+        self._owned_session_accepts_ip_cookies = self.api_mode == ApiMode.REST if self._session_owned else None
+        self.session = session or self.__create_session(allow_ip_cookies=self.api_mode == ApiMode.REST)
+
+    def __create_session(self, allow_ip_cookies: bool) -> ClientSession:
+        """Create a library-owned session for the selected API's cookie policy."""
+        return ClientSession(
+            headers={"User-Agent": f"{DEFAULT_USER_AGENT}"},
+            timeout=ClientTimeout(DEFAULT_TIMEOUT),
+            cookie_jar=CookieJar(unsafe=allow_ip_cookies),
+            connector=TCPConnector(verify_ssl=self._verify_ssl),
         )
+
+    async def __activate_rest_mode(self) -> None:
+        """Select REST and replace only a library-owned safe session."""
+        self._active_api_mode = ApiMode.REST
+        if not self._session_owned or self._owned_session_accepts_ip_cookies is True:
+            return
+
+        await self.session.close()
+        self.session = self.__create_session(allow_ip_cookies=True)
+        self._owned_session_accepts_ip_cookies = True
 
     @property
     def active_api_mode(self) -> ApiMode:
@@ -524,7 +537,7 @@ class SagemcomClient:
     async def login(self):
         """Login to the router using configured API mode."""
         if self.api_mode == ApiMode.REST:
-            self._active_api_mode = ApiMode.REST
+            await self.__activate_rest_mode()
             return await self.__rest_login()
 
         if self.api_mode == ApiMode.LEGACY:
@@ -540,7 +553,7 @@ class SagemcomClient:
             if not self.__should_fallback_to_rest(exception):
                 raise
 
-            self._active_api_mode = ApiMode.REST
+            await self.__activate_rest_mode()
             return await self.__rest_login()
 
     async def logout(self):
@@ -571,9 +584,6 @@ class SagemcomClient:
         if self.api_mode == ApiMode.REST:
             return EncryptionMethod.NONE
 
-        if self.api_mode == ApiMode.AUTO and await self.__probe_rest_availability():
-            return EncryptionMethod.NONE
-
         for encryption_method in EncryptionMethod:
             try:
                 if encryption_method == EncryptionMethod.NONE:
@@ -581,7 +591,11 @@ class SagemcomClient:
                 self.authentication_method = encryption_method
                 self._password_hash = self.__generate_hash(self.password, encryption_method)
 
-                await self.login()
+                if self.api_mode == ApiMode.AUTO:
+                    self._active_api_mode = ApiMode.LEGACY
+                    await self.__legacy_login()
+                else:
+                    await self.login()
 
                 self._server_nonce = ""
                 self._session_id = 0
@@ -593,6 +607,14 @@ class SagemcomClient:
                 AuthenticationException,
             ):
                 pass
+            except Exception as exception:
+                if not self.__should_fallback_to_rest(exception):
+                    raise
+
+                await self.__activate_rest_mode()
+                if await self.__probe_rest_availability():
+                    return EncryptionMethod.NONE
+                raise
 
         return EncryptionMethod.NONE
 

@@ -6,7 +6,8 @@ from copy import deepcopy
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from aiohttp import ClientSession
+from aiohttp import ClientSession, CookieJar
+from yarl import URL
 
 from sagemcom_api.client import SagemcomClient
 from sagemcom_api.enums import ApiMode, EncryptionMethod
@@ -17,6 +18,7 @@ from sagemcom_api.exceptions import (
     LoginRetryErrorException,
     NonWritableParameterException,
     UnauthorizedException,
+    UnknownException,
     UnknownPathException,
 )
 
@@ -146,16 +148,59 @@ async def test_rest_request_unauthorized_statuses_raise_unauthorized(status):
 
 
 @pytest.mark.asyncio
-async def test_default_session_accepts_ip_cookies():
-    """Default aiohttp session should accept cookies from IP hosts."""
+@pytest.mark.parametrize("api_mode", [ApiMode.LEGACY, ApiMode.AUTO])
+async def test_default_legacy_cookie_policy_rejects_ip_cookies(api_mode):
+    """Legacy-capable sessions should retain aiohttp's safe cookie policy."""
     client = SagemcomClient(
         host="192.168.1.1",
         username="admin",
         password="admin",
         authentication_method=EncryptionMethod.MD5,
+        api_mode=api_mode,
     )
     try:
-        assert getattr(client.session.cookie_jar, "_unsafe", False) is True
+        router_url = URL("http://192.168.1.1/")
+        client.session.cookie_jar.update_cookies({"session": "legacy-cookie"}, response_url=router_url)
+
+        assert "session" not in client.session.cookie_jar.filter_cookies(router_url)
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_default_rest_cookie_policy_accepts_ip_cookies():
+    """A library-owned REST session should retain cookies from an IP host."""
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        api_mode=ApiMode.REST,
+    )
+    try:
+        router_url = URL("http://192.168.1.1/")
+        client.session.cookie_jar.update_cookies({"session": "rest-cookie"}, response_url=router_url)
+
+        cookies = client.session.cookie_jar.filter_cookies(router_url)
+        assert cookies["session"].value == "rest-cookie"
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_supplied_rest_session_and_cookie_jar_are_unchanged():
+    """REST mode should preserve caller-owned session policy and identity."""
+    cookie_jar = CookieJar()
+    session = ClientSession(cookie_jar=cookie_jar)
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        api_mode=ApiMode.REST,
+        session=session,
+    )
+    try:
+        assert client.session is session
+        assert client.session.cookie_jar is cookie_jar
     finally:
         await client.close()
 
@@ -301,10 +346,12 @@ async def test_login_with_preconfigured_fixture(mock_client_sha512):
 
 
 @pytest.mark.asyncio
-async def test_login_auto_fallbacks_to_rest_when_legacy_503():
-    """Auto mode should switch to REST when legacy endpoint is unavailable."""
+async def test_login_auto_fallback_preserves_supplied_cookie_jar():
+    """AUTO fallback should not mutate a caller-owned session or cookie jar."""
     mock_session = MagicMock(spec=ClientSession)
     mock_session.close = AsyncMock()
+    supplied_cookie_jar = CookieJar()
+    mock_session.cookie_jar = supplied_cookie_jar
 
     legacy_response = AsyncMock()
     legacy_response.status = 503
@@ -333,8 +380,38 @@ async def test_login_auto_fallbacks_to_rest_when_legacy_503():
 
     assert result is True
     assert client.active_api_mode == ApiMode.REST
+    assert client.session is mock_session
+    assert client.session.cookie_jar is supplied_cookie_jar
     assert mock_session.post.call_count == 1
     assert mock_session.request.call_count == 1
+
+
+@pytest.mark.asyncio
+async def test_auto_fallback_replaces_library_owned_session_for_ip_cookies():
+    """AUTO should replace only its own safe session when REST is selected."""
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        api_mode=ApiMode.AUTO,
+    )
+    original_session = client.session
+    client._SagemcomClient__legacy_login = AsyncMock(side_effect=UnknownException("<html>service unavailable</html>"))
+    client._SagemcomClient__rest_login = AsyncMock(return_value=True)
+
+    try:
+        result = await client.login()
+
+        assert result is True
+        assert client.session is not original_session
+        assert original_session.closed
+
+        router_url = URL("http://192.168.1.1/")
+        client.session.cookie_jar.update_cookies({"session": "rest-cookie"}, response_url=router_url)
+        cookies = client.session.cookie_jar.filter_cookies(router_url)
+        assert cookies["session"].value == "rest-cookie"
+    finally:
+        await client.close()
 
 
 @pytest.mark.asyncio
@@ -359,6 +436,31 @@ async def test_probe_rest_bad_request_allows_legacy_encryption_detection():
     rest_response = AsyncMock()
     rest_response.status = 400
     rest_response.text = AsyncMock(return_value="REST unavailable")
+    rest_response.__aenter__ = AsyncMock(return_value=rest_response)
+    rest_response.__aexit__ = AsyncMock(return_value=None)
+
+    session = MagicMock(spec=ClientSession)
+    session.request.return_value = rest_response
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        session=session,
+        api_mode=ApiMode.AUTO,
+    )
+    client._SagemcomClient__legacy_login = AsyncMock(return_value=True)
+
+    result = await client.get_encryption_method()
+
+    assert result == EncryptionMethod.MD5
+    client._SagemcomClient__legacy_login.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_dual_stack_auto_prefers_working_legacy_encryption():
+    """AUTO encryption detection should prefer legacy when both APIs work."""
+    rest_response = AsyncMock()
+    rest_response.status = 204
     rest_response.__aenter__ = AsyncMock(return_value=rest_response)
     rest_response.__aexit__ = AsyncMock(return_value=None)
 
