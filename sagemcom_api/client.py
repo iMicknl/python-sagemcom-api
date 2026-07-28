@@ -400,6 +400,7 @@ class SagemcomClient:
             )
         except (
             AuthenticationException,
+            BadRequestException,
             UnauthorizedException,
             UnsupportedHostException,
             UnknownException,

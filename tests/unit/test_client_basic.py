@@ -354,6 +354,32 @@ async def test_get_encryption_method_rest_returns_none():
 
 
 @pytest.mark.asyncio
+async def test_probe_rest_bad_request_allows_legacy_encryption_detection():
+    """A rejected REST probe should not prevent legacy mode detection."""
+    rest_response = AsyncMock()
+    rest_response.status = 400
+    rest_response.text = AsyncMock(return_value="REST unavailable")
+    rest_response.__aenter__ = AsyncMock(return_value=rest_response)
+    rest_response.__aexit__ = AsyncMock(return_value=None)
+
+    session = MagicMock(spec=ClientSession)
+    session.request.return_value = rest_response
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        session=session,
+        api_mode=ApiMode.AUTO,
+    )
+    client._SagemcomClient__legacy_login = AsyncMock(return_value=True)
+
+    result = await client.get_encryption_method()
+
+    assert result == EncryptionMethod.MD5
+    client._SagemcomClient__legacy_login.assert_awaited_once()
+
+
+@pytest.mark.asyncio
 async def test_get_hosts_rest_mode():
     """get_hosts should parse wifi and ethernet devices on REST firmware."""
     mock_session = MagicMock(spec=ClientSession)
