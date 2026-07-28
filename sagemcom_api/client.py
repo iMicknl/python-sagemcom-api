@@ -608,7 +608,7 @@ class SagemcomClient:
             ):
                 pass
             except Exception as exception:
-                if not self.__should_fallback_to_rest(exception):
+                if self.api_mode != ApiMode.AUTO or not self.__should_fallback_to_rest(exception):
                     raise
 
                 await self.__activate_rest_mode()

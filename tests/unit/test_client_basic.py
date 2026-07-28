@@ -20,6 +20,7 @@ from sagemcom_api.exceptions import (
     UnauthorizedException,
     UnknownException,
     UnknownPathException,
+    UnsupportedHostException,
 )
 
 
@@ -479,6 +480,26 @@ async def test_dual_stack_auto_prefers_working_legacy_encryption():
 
     assert result == EncryptionMethod.MD5
     client._SagemcomClient__legacy_login.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_legacy_mode_never_probes_rest_during_encryption_detection():
+    """Explicit legacy mode should not silently switch transports."""
+    session = MagicMock(spec=ClientSession)
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        session=session,
+        api_mode=ApiMode.LEGACY,
+    )
+    client._SagemcomClient__legacy_login = AsyncMock(side_effect=UnsupportedHostException("legacy unavailable"))
+    client._SagemcomClient__probe_rest_availability = AsyncMock(return_value=True)
+
+    with pytest.raises(UnsupportedHostException, match="legacy unavailable"):
+        await client.get_encryption_method()
+
+    client._SagemcomClient__probe_rest_availability.assert_not_awaited()
 
 
 @pytest.mark.asyncio
