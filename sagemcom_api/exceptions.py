@@ -31,8 +31,13 @@ class AuthenticationException(UnauthorizedException):
     """Raised when authentication is not correct."""
 
 
-class InvalidSessionException(UnauthorizedException):
-    """Raised when session is invalid."""
+class InvalidSessionException(BaseSagemcomException):
+    """Raised when session is invalid.
+
+    This is a transient error that occurs when the router invalidates the
+    session (e.g., due to a concurrent login). It should not be treated as
+    a permanent authorization failure.
+    """
 
 
 class LoginRetryErrorException(BaseSagemcomException):
