@@ -403,7 +403,7 @@ class SagemcomClient:
             LoginTimeoutException,
             InvalidSessionException,
         ),
-        max_tries=1,
+        max_tries=2,
         on_backoff=retry_login,
     )
     async def get_values_by_xpaths(self, xpaths: dict[str, str], options: dict | None = None) -> dict:
@@ -445,7 +445,7 @@ class SagemcomClient:
             LoginTimeoutException,
             InvalidSessionException,
         ),
-        max_tries=1,
+        max_tries=2,
         on_backoff=retry_login,
     )
     async def set_values_by_xpaths(self, xpaths: dict[str, str], options: dict | None = None) -> dict:
@@ -476,7 +476,7 @@ class SagemcomClient:
             LoginTimeoutException,
             InvalidSessionException,
         ),
-        max_tries=1,
+        max_tries=2,
         on_backoff=retry_login,
     )
     async def get_device_info(self) -> DeviceInfo:
@@ -507,7 +507,7 @@ class SagemcomClient:
             LoginTimeoutException,
             InvalidSessionException,
         ),
-        max_tries=1,
+        max_tries=2,
         on_backoff=retry_login,
     )
     async def get_hosts(self, only_active: bool | None = False) -> list[Device]:
@@ -529,7 +529,7 @@ class SagemcomClient:
             LoginTimeoutException,
             InvalidSessionException,
         ),
-        max_tries=1,
+        max_tries=2,
         on_backoff=retry_login,
     )
     async def get_port_mappings(self) -> list[PortMapping]:
@@ -547,7 +547,7 @@ class SagemcomClient:
             LoginTimeoutException,
             InvalidSessionException,
         ),
-        max_tries=1,
+        max_tries=2,
         on_backoff=retry_login,
     )
     async def get_logs(self) -> str:
