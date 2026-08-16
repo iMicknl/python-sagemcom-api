@@ -1,4 +1,4 @@
-name: Linters
+name: Pytest
 
 on:
   push:
@@ -7,8 +7,9 @@ on:
   pull_request:
     branches:
       - main
+
 jobs:
-  analyse:
+  test:
     name: "Python ${{ matrix.python-version }}"
     runs-on: ubuntu-latest
 
@@ -37,21 +38,8 @@ jobs:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/uv.lock') }}
 
-      - name: Cache prek
-        uses: actions/cache@v6
-        with:
-          path: ~/.cache/prek/
-          key: ${{ runner.os }}-prek-${{ hashFiles('**/uv.lock') }}-${{ hashFiles('**/.pre-commit-config.yaml') }} # yamllint disable-line
-
       - name: Install dependencies
         run: uv sync --all-groups
 
-      - name: Register problems matchers
-        run: |
-          echo "::add-matcher::.github/workflows/matchers/mypy.json"
-          echo "::add-matcher::.github/workflows/matchers/python.json"
-
-      - name: Run prek (pre-commit checks)
-        env:
-          SKIP: ${{ github.ref == 'refs/heads/main' && 'no-commit-to-branch' || '' }}
-        run: uv run prek run --show-diff-on-failure --color=always --all-files
+      - name: Run pytest
+        run: uv run pytest -q
