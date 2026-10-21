@@ -127,6 +127,8 @@ If you are not sure which encryption method to use, you can leave it empty or pa
 
 This function will throw a `LoginTimeoutException` when no match is found, since this is still a HTTP Time Out. This could caused by the wrong encryption method, but also by trying to connect to an inaccessible host.
 
+It will throw a `LoginRetryErrorException` when the router has locked logins after too many attempts. Wait for the lock to expire before trying again.
+
 ### Handle exceptions
 
 Some functions may cause an error when an attempt is made to execute it. These exceptions are thrown by the client and need to be [handled in your Python program](https://docs.python.org/3/tutorial/errors.html#handling-exceptions). Best practice is to catch some specific exceptions and handle them gracefully.
