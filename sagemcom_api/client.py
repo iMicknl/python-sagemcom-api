@@ -213,8 +213,24 @@ class SagemcomClient:
         (ClientConnectorError, ClientOSError, ServerDisconnectedError),
         max_tries=5,
     )
-    # pylint: disable=too-many-branches
     async def __post(self, url, data):
+        """Post a request that is safe to repeat, retrying on connection errors."""
+        return await self.__send(url, data)
+
+    @backoff.on_exception(
+        backoff.expo,
+        ClientConnectorError,
+        max_tries=5,
+    )
+    async def __post_once(self, url, data):
+        """Post a request that must not run twice, retrying only when the connection could not be opened.
+
+        A dropped connection after sending may mean the router already executed the action (e.g. a reboot).
+        """
+        return await self.__send(url, data)
+
+    # pylint: disable=too-many-branches
+    async def __send(self, url, data):
         async with self.session.post(url, data=data) as response:
             if response.status == 400:
                 result = await response.text()
@@ -279,8 +295,11 @@ class SagemcomClient:
 
             return result
 
-    async def __api_request_async(self, actions, priority=False):
-        """Build request to the internal JSON-req API."""
+    async def __api_request_async(self, actions, priority=False, idempotent=True):
+        """Build request to the internal JSON-req API.
+
+        :param idempotent: set to False for actions that must not be resent after a dropped connection
+        """
         self.__generate_request_id()
         self.__generate_nonce()
         self.__generate_auth_key()
@@ -300,7 +319,8 @@ class SagemcomClient:
 
         form_data = {"req": json.dumps(payload, separators=(",", ":"))}
         try:
-            result = await self.__post(api_host, form_data)
+            post = self.__post if idempotent else self.__post_once
+            result = await post(api_host, form_data)
             return result
         except (
             ClientConnectorError,
@@ -575,7 +595,7 @@ class SagemcomClient:
             "parameters": {"source": "GUI"},
         }
 
-        response = await self.__api_request_async([action], False)
+        response = await self.__api_request_async([action], False, idempotent=False)
         data = self.__get_response_value(response)
 
         return data
@@ -590,7 +610,7 @@ class SagemcomClient:
                 "parameters": {"BlockTraffic": block_traffic},
             }
         ]
-        return await self.__api_request_async(actions, False)
+        return await self.__api_request_async(actions, False, idempotent=False)
 
     async def get_speed_test_results(self) -> list[SpeedTestResult]:
         """Retrieve Speed Test results from Sagemcom F@st device."""
