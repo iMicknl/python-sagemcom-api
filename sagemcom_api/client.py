@@ -364,7 +364,11 @@ class SagemcomClient:
         self._request_id = -1
 
     async def get_encryption_method(self):
-        """Determine which encryption method to use for authentication and set it directly."""
+        """Determine which encryption method to use for authentication and set it directly.
+
+        :raises LoginRetryErrorException: the router has locked logins after too many attempts.
+            Probing further would only extend the lock, so detection stops here.
+        """
         for encryption_method in EncryptionMethod:
             try:
                 self.authentication_method = encryption_method
@@ -380,7 +384,6 @@ class SagemcomClient:
             except (
                 LoginTimeoutException,
                 AuthenticationException,
-                LoginRetryErrorException,
             ):
                 pass
 

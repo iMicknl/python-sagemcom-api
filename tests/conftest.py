@@ -41,6 +41,12 @@ def login_auth_error_response() -> dict[str, Any]:
 
 
 @pytest.fixture
+def login_retry_error_response() -> dict[str, Any]:
+    """Mock response for a login locked after too many attempts."""
+    return load_fixture("login_retry_error.json")
+
+
+@pytest.fixture
 def login_invalid_session_response() -> dict[str, Any]:
     """Mock response for invalid session error."""
     return load_fixture("login_invalid_session.json")
