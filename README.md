@@ -27,7 +27,7 @@ The Sagemcom F@st series is used by multiple cable companies, where some cable c
 | Sagemcom F@st 5250           | Bell (Home Hub 2000)       | md5                   | username: guest, password: "" |
 | Sagemcom F@st 5280           |                            | sha512                |                               |
 | Sagemcom F@st 5290 / FWR226e | Frontier                   | md5                   | username: admin               |
-| Sagemcom F@st 5359           | KPN (Box 12)               | sha512                | username: admin               |
+| Sagemcom F@st 5359           | KPN (Box 12)<sup>3</sup>   | sha512                | username: admin               |
 | Sagemcom F@st 5364           | BT (Smart Hub)             | md5                   | username: guest, password: "" |
 | SagemCom F@st 5366SD         | Eir F3000                  | md5                   |                               |
 | Sagemcom F@st 5370e          | Telia                      | sha512                |                               |
@@ -46,6 +46,8 @@ The Sagemcom F@st series is used by multiple cable companies, where some cable c
 <sup>1</sup> The firmware provided on the Sagemcom F@st 3896 router from Ziggo does not support the endpoint used in this library. [sagemcom-f3896lg-zg-api](https://github.com/mgyucht/sagemcom-f3896lg-zg-api) provides an API client suitable for Ziggo's firmware.
 
 <sup>2</sup> If you run into `SSLV3_ALERT_HANDSHAKE_FAILURE` errors, see [here](docs/ssl-error.md) for a workaround.
+
+<sup>3</sup> Recent KPN Box 12 firmware replaced the Sagemcom API used by this library with a SoftAtHome API (`/ws`), which is not supported. Only older firmware works with this library, see [#391](https://github.com/iMicknl/python-sagemcom-api/issues/391).
 
 > Contributions welcome. If you router model is supported by this package, but not in the list above, please create [an issue](https://github.com/iMicknl/python-sagemcom-api/issues/new) or pull request.
 
