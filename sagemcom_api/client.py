@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import hashlib
 import json
 import math
@@ -37,6 +38,7 @@ from .enums import ApiMode, EncryptionMethod
 from .exceptions import (
     AuthenticationException,
     BadRequestException,
+    BaseSagemcomException,
     InvalidSessionException,
     LoginConnectionException,
     LoginRetryErrorException,
@@ -97,8 +99,8 @@ class SagemcomClient:
 
         self._session_owned = session is None
         self._verify_ssl = verify_ssl if verify_ssl is not None else True
-        self._owned_session_accepts_ip_cookies = self.api_mode == ApiMode.REST if self._session_owned else None
-        self.session = session or self.__create_session(allow_ip_cookies=self.api_mode == ApiMode.REST)
+        self._session_allows_ip_cookies = self.api_mode == ApiMode.REST
+        self.session = session or self.__create_session(allow_ip_cookies=self._session_allows_ip_cookies)
 
     def __create_session(self, allow_ip_cookies: bool) -> ClientSession:
         """Create a library-owned session for the selected API's cookie policy."""
@@ -109,15 +111,20 @@ class SagemcomClient:
             connector=TCPConnector(verify_ssl=self._verify_ssl),
         )
 
-    async def __activate_rest_mode(self) -> None:
-        """Select REST and replace only a library-owned safe session."""
-        self._active_api_mode = ApiMode.REST
-        if not self._session_owned or self._owned_session_accepts_ip_cookies is True:
+    async def __switch_api_mode(self, api_mode: ApiMode) -> None:
+        """Select the active API and match a library-owned session's cookie policy to it.
+
+        REST firmware sets its session cookie on the IP host, which needs an unsafe cookie jar,
+        but legacy firmware breaks when that jar is used. Caller-provided sessions are never replaced.
+        """
+        self._active_api_mode = api_mode
+        allow_ip_cookies = api_mode == ApiMode.REST
+        if not self._session_owned or self._session_allows_ip_cookies == allow_ip_cookies:
             return
 
         await self.session.close()
-        self.session = self.__create_session(allow_ip_cookies=True)
-        self._owned_session_accepts_ip_cookies = True
+        self.session = self.__create_session(allow_ip_cookies=allow_ip_cookies)
+        self._session_allows_ip_cookies = allow_ip_cookies
 
     @property
     def active_api_mode(self) -> ApiMode:
@@ -396,32 +403,28 @@ class SagemcomClient:
 
     async def __rest_login(self):
         """Login to routers exposing the newer REST API."""
-        await self.__rest_request(
-            "POST",
-            "/api/v1/login",
-            data={"login": self.username, "password": self.password},
-        )
-        return True
-
-    async def __probe_rest_availability(self) -> bool:
-        """Try a REST login/logout sequence to detect REST-only firmware."""
         try:
             await self.__rest_request(
                 "POST",
                 "/api/v1/login",
                 data={"login": self.username, "password": self.password},
             )
-        except (
-            AuthenticationException,
-            BadRequestException,
-            UnauthorizedException,
-            UnsupportedHostException,
-            UnknownException,
-        ):
-            return False
-
-        await self.__rest_request("POST", "/api/v1/logout", data={"_": ""})
+        except UnauthorizedException as exception:
+            raise AuthenticationException(str(exception)) from exception
         return True
+
+    async def __fallback_to_rest_login(self, legacy_exception: Exception):
+        """Login over REST after legacy failed, restoring legacy state when REST fails too."""
+        await self.__switch_api_mode(ApiMode.REST)
+        try:
+            return await self.__rest_login()
+        except AuthenticationException:
+            await self.__switch_api_mode(ApiMode.LEGACY)
+            raise
+        except Exception as rest_exception:
+            await self.__switch_api_mode(ApiMode.LEGACY)
+            # Without a REST endpoint this is a legacy router, so keep the error legacy users always got.
+            raise legacy_exception from rest_exception
 
     @staticmethod
     def __first_value(data: dict[str, Any], *keys: str) -> Any:
@@ -475,33 +478,29 @@ class SagemcomClient:
             detected_device_type=self.__first_value(entry, "devicetype", "deviceType", "detected_device_type"),
         )
 
-    def __extract_rest_home_hosts(self, data: Any) -> list[Device]:
-        """Parse /api/v1/home hosts payload."""
-        if isinstance(data, list):
-            if not data:
-                return []
-            home = data[0]
-        elif isinstance(data, dict):
-            home = data
-        else:
-            raise UnknownException("Invalid response from /api/v1/home")
-
+    def __extract_rest_home_hosts(self, data: Any) -> list[Device] | None:
+        """Parse /api/v1/home hosts payload, returning None when it carries no host lists."""
+        home = data[0] if isinstance(data, list) and data else data
         if not isinstance(home, dict):
-            raise UnknownException("Invalid response from /api/v1/home")
+            return None
 
-        devices: list[Device] = []
-        for key, interface_type in (
-            ("wirelessListDevice", "wifi"),
-            ("ethernetListDevice", "ethernet"),
-        ):
-            entries = home.get(key, [])
-            if not isinstance(entries, list):
-                raise UnknownException("Invalid response from /api/v1/home")
-            for entry in entries:
-                if isinstance(entry, dict):
-                    devices.append(self.__build_rest_device(entry, interface_type))
+        host_lists = [
+            (entries, interface_type)
+            for key, interface_type in (
+                ("wirelessListDevice", "wifi"),
+                ("ethernetListDevice", "ethernet"),
+            )
+            if isinstance(entries := home.get(key), list)
+        ]
+        if not host_lists:
+            return None
 
-        return devices
+        return [
+            self.__build_rest_device(entry, interface_type)
+            for entries, interface_type in host_lists
+            for entry in entries
+            if isinstance(entry, dict)
+        ]
 
     def __extract_rest_hosts(self, data: Any) -> list[Device]:
         """Parse /api/v1/hosts payload."""
@@ -556,7 +555,7 @@ class SagemcomClient:
     async def login(self):
         """Login to the router using configured API mode."""
         if self.api_mode == ApiMode.REST:
-            await self.__activate_rest_mode()
+            await self.__switch_api_mode(ApiMode.REST)
             return await self.__rest_login()
 
         if self.api_mode == ApiMode.LEGACY:
@@ -566,14 +565,12 @@ class SagemcomClient:
         # Auto-detect mode: try legacy first, then fall back to REST for newer firmwares.
         try:
             self._active_api_mode = ApiMode.LEGACY
-            result = await self.__legacy_login()
-            return result
+            return await self.__legacy_login()
         except Exception as exception:  # pylint: disable=broad-except
             if not self.__should_fallback_to_rest(exception):
                 raise
 
-            await self.__activate_rest_mode()
-            return await self.__rest_login()
+            return await self.__fallback_to_rest_login(exception)
 
     async def logout(self):
         """Log out of the Sagemcom F@st device."""
@@ -594,8 +591,10 @@ class SagemcomClient:
                 "This method is not available with REST API mode. Use helper methods supported for REST firmware instead."
             )
 
-    async def get_encryption_method(self) -> EncryptionMethod:
+    async def get_encryption_method(self) -> EncryptionMethod | None:
         """Determine which encryption method to use for authentication and set it directly.
+
+        Returns EncryptionMethod.NONE for REST firmware and None when no legacy method matches.
 
         :raises LoginRetryErrorException: the router has locked logins after too many attempts.
             Probing further would only extend the lock, so detection stops here.
@@ -604,9 +603,9 @@ class SagemcomClient:
             return EncryptionMethod.NONE
 
         for encryption_method in EncryptionMethod:
+            if encryption_method == EncryptionMethod.NONE:
+                continue
             try:
-                if encryption_method == EncryptionMethod.NONE:
-                    continue
                 self.authentication_method = encryption_method
                 self._password_hash = self.__generate_hash(self.password, encryption_method)
 
@@ -630,12 +629,15 @@ class SagemcomClient:
                 if self.api_mode != ApiMode.AUTO or not self.__should_fallback_to_rest(exception):
                     raise
 
-                await self.__activate_rest_mode()
-                if await self.__probe_rest_availability():
-                    return EncryptionMethod.NONE
-                raise
+                await self.__fallback_to_rest_login(exception)
+                self.authentication_method = EncryptionMethod.NONE
+                self._password_hash = self.__generate_hash(self.password, EncryptionMethod.NONE)
+                with contextlib.suppress(BaseSagemcomException):
+                    await self.logout()
 
-        return EncryptionMethod.NONE
+                return EncryptionMethod.NONE
+
+        return None
 
     async def get_value_by_xpath(self, xpath: str, options: dict | None = None, ignore_unknown_paths: bool = False) -> Any:
         """Retrieve raw value from router using XPath.
@@ -804,24 +806,18 @@ class SagemcomClient:
         """Retrieve hosts connected to Sagemcom F@st device."""
         if self._active_api_mode == ApiMode.REST:
             home_endpoint = "/api/v1/home"
+            devices: list[Device] | None = None
             try:
                 home_data = await self.__rest_request("GET", home_endpoint)
             except (BadRequestException, UnsupportedHostException) as exception:
                 if not self.__is_unsupported_rest_endpoint(exception, home_endpoint):
                     raise
             else:
-                try:
-                    devices = self.__extract_rest_home_hosts(home_data)
-                except UnknownException:
-                    devices = []
+                devices = self.__extract_rest_home_hosts(home_data)
 
-                if devices:
-                    if only_active:
-                        return [device for device in devices if device.active is True]
-                    return devices
-
-            hosts_data = await self.__rest_request("GET", "/api/v1/hosts")
-            devices = self.__extract_rest_hosts(hosts_data)
+            if devices is None:
+                hosts_data = await self.__rest_request("GET", "/api/v1/hosts")
+                devices = self.__extract_rest_hosts(hosts_data)
 
             if only_active:
                 return [device for device in devices if device.active is True]

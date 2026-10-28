@@ -435,6 +435,92 @@ async def test_auto_fallback_replaces_library_owned_session_for_ip_cookies():
 
 
 @pytest.mark.asyncio
+async def test_auto_failed_rest_fallback_restores_legacy_session():
+    """A legacy router whose REST login also fails should keep its legacy error and safe session."""
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        api_mode=ApiMode.AUTO,
+    )
+    legacy_error = UnknownException("<html>service unavailable</html>")
+    client._SagemcomClient__legacy_login = AsyncMock(side_effect=legacy_error)
+    client._SagemcomClient__rest_request = AsyncMock(side_effect=UnsupportedHostException("not found"))
+
+    try:
+        with pytest.raises(UnknownException) as exc_info:
+            await client.login()
+
+        assert exc_info.value is legacy_error
+        assert client.active_api_mode == ApiMode.LEGACY
+
+        router_url = URL("http://192.168.1.1/")
+        client.session.cookie_jar.update_cookies({"session": "legacy-cookie"}, response_url=router_url)
+        assert "session" not in client.session.cookie_jar.filter_cookies(router_url)
+    finally:
+        await client.close()
+
+
+@pytest.mark.asyncio
+async def test_auto_rest_fallback_rejected_credentials_raise_authentication_error():
+    """A REST login rejection after fallback should surface as an authentication failure."""
+    session = MagicMock(spec=ClientSession)
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="wrong",
+        session=session,
+        api_mode=ApiMode.AUTO,
+    )
+    client._SagemcomClient__legacy_login = AsyncMock(side_effect=UnknownException("<html>service unavailable</html>"))
+    client._SagemcomClient__rest_request = AsyncMock(side_effect=UnauthorizedException("unauthorized"))
+
+    with pytest.raises(AuthenticationException):
+        await client.login()
+
+    assert client.active_api_mode == ApiMode.LEGACY
+
+
+@pytest.mark.asyncio
+async def test_get_encryption_method_returns_none_when_no_legacy_method_matches():
+    """Legacy detection should keep returning None when every method is rejected."""
+    session = MagicMock(spec=ClientSession)
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="wrong",
+        session=session,
+        api_mode=ApiMode.AUTO,
+    )
+    client._SagemcomClient__legacy_login = AsyncMock(side_effect=AuthenticationException("rejected"))
+    client._SagemcomClient__rest_request = AsyncMock()
+
+    assert await client.get_encryption_method() is None
+    client._SagemcomClient__rest_request.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_get_encryption_method_auto_detects_rest_firmware():
+    """AUTO detection should report NONE only after a REST login succeeds."""
+    session = MagicMock(spec=ClientSession)
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        session=session,
+        api_mode=ApiMode.AUTO,
+    )
+    client._SagemcomClient__legacy_login = AsyncMock(side_effect=UnknownException("<html>service unavailable</html>"))
+    client._SagemcomClient__rest_request = AsyncMock(return_value=None)
+
+    assert await client.get_encryption_method() == EncryptionMethod.NONE
+    assert client.authentication_method == EncryptionMethod.NONE
+    assert client.active_api_mode == ApiMode.REST
+    endpoints = [call.args[1] for call in client._SagemcomClient__rest_request.await_args_list]
+    assert endpoints == ["/api/v1/login", "/api/v1/logout"]
+
+
+@pytest.mark.asyncio
 async def test_get_encryption_method_rest_returns_none():
     """REST mode should immediately signal that no encryption method is needed."""
     client = SagemcomClient(
@@ -513,12 +599,12 @@ async def test_legacy_mode_never_probes_rest_during_encryption_detection():
         api_mode=ApiMode.LEGACY,
     )
     client._SagemcomClient__legacy_login = AsyncMock(side_effect=UnsupportedHostException("legacy unavailable"))
-    client._SagemcomClient__probe_rest_availability = AsyncMock(return_value=True)
+    client._SagemcomClient__rest_login = AsyncMock(return_value=True)
 
     with pytest.raises(UnsupportedHostException, match="legacy unavailable"):
         await client.get_encryption_method()
 
-    client._SagemcomClient__probe_rest_availability.assert_not_awaited()
+    client._SagemcomClient__rest_login.assert_not_awaited()
 
 
 @pytest.mark.asyncio
@@ -765,6 +851,23 @@ async def test_get_hosts_rest_fallbacks_on_home_400():
     assert len(devices) == 1
     assert devices[0].host_name == "phone"
     assert devices[0].interface_type == "wifi"
+
+
+@pytest.mark.asyncio
+async def test_get_hosts_rest_trusts_empty_home_host_lists():
+    """A recognised but empty /api/v1/home payload means no hosts, not an unsupported endpoint."""
+    session = MagicMock(spec=ClientSession)
+    client = SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        session=session,
+        api_mode=ApiMode.REST,
+    )
+    client._SagemcomClient__rest_request = AsyncMock(return_value=[{"wirelessListDevice": [], "ethernetListDevice": []}])
+
+    assert await client.get_hosts() == []
+    client._SagemcomClient__rest_request.assert_awaited_once_with("GET", "/api/v1/home")
 
 
 @pytest.mark.asyncio
