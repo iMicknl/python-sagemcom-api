@@ -500,6 +500,22 @@ async def test_get_encryption_method_returns_none_when_no_legacy_method_matches(
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("method_name", ["login", "get_encryption_method"])
+async def test_auto_login_lockout_never_falls_back_to_rest(method_name, mock_session_factory, login_retry_error_response):
+    """A legacy login lockout must stop AUTO mode instead of trying REST."""
+    mock_session = mock_session_factory([login_retry_error_response] * 3)
+    client = SagemcomClient("192.168.1.1", "admin", "admin", session=mock_session)
+    client._SagemcomClient__rest_request = AsyncMock()
+
+    with pytest.raises(LoginRetryErrorException):
+        await getattr(client, method_name)()
+
+    assert mock_session.post.call_count == 1
+    client._SagemcomClient__rest_request.assert_not_awaited()
+    assert client.active_api_mode == ApiMode.LEGACY
+
+
+@pytest.mark.asyncio
 async def test_get_encryption_method_auto_detects_rest_firmware():
     """AUTO detection should report NONE only after a REST login succeeds."""
     session = MagicMock(spec=ClientSession)
