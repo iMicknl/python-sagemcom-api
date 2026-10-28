@@ -14,6 +14,7 @@ from .const import (
 from .exceptions import (
     AccessRestrictionException,
     AuthenticationException,
+    BaseSagemcomException,
     LoginRetryErrorException,
     MaximumSessionCountException,
     NonWritableParameterException,
@@ -21,60 +22,52 @@ from .exceptions import (
     UnknownPathException,
 )
 
+# Firmware differs in which of these it reports for a path that does not exist.
+PATH_ERRORS = (XMO_INVALID_PATH_ERR, XMO_UNKNOWN_PATH_ERR)
+
+# These fail the whole request. Actions may still carry a placeholder such as
+# XMO_UNKNOWN_PATH_ERR, which must not hide the real cause.
+REQUEST_ERRORS = (
+    XMO_AUTHENTICATION_ERR,
+    XMO_ACCESS_RESTRICTION_ERR,
+    XMO_MAX_SESSION_COUNT_ERR,
+    XMO_LOGIN_RETRY_ERR,
+)
+
 
 class ActionErrorHandler:
-    """Raised when a requested action has an error."""
-
-    KNOWN_EXCEPTIONS = (
-        XMO_AUTHENTICATION_ERR,
-        XMO_ACCESS_RESTRICTION_ERR,
-        XMO_NON_WRITABLE_PARAMETER_ERR,
-        XMO_INVALID_PATH_ERR,
-        XMO_UNKNOWN_PATH_ERR,
-        XMO_MAX_SESSION_COUNT_ERR,
-        XMO_LOGIN_RETRY_ERR,
-    )
+    """Raise exceptions for errors reported in a JSON-req reply."""
 
     @staticmethod
-    def throw_if_error(response, ignore_unknown_path: bool = False) -> None:
-        """Raise the first action-level error, or do nothing if all actions succeeded.
+    def throw_if_error(response, ignore_unknown_paths: bool = False) -> None:
+        """Raise for a request-level error, otherwise for the first failed action.
 
-        :param ignore_unknown_path: if True, silently ignore UnknownPathException
+        :param ignore_unknown_paths: skip actions whose path does not exist,
+            while still raising any other error
         """
-        if response["reply"]["error"]["description"] != XMO_REQUEST_ACTION_ERR:
+        request_error = response["reply"]["error"]
+        request_error_desc = request_error["description"]
+
+        if request_error_desc in REQUEST_ERRORS:
+            raise ActionErrorHandler.from_error_description(request_error, request_error_desc)
+
+        if request_error_desc != XMO_REQUEST_ACTION_ERR:
             return
 
         for action in response["reply"]["actions"]:
             action_error = action["error"]
             action_error_desc = action_error["description"]
-            if action_error_desc != XMO_NO_ERR:
-                exc = ActionErrorHandler.from_error_description(action_error, action_error_desc)
-                if ignore_unknown_path and isinstance(exc, UnknownPathException):
-                    continue
-                raise exc
+
+            if action_error_desc == XMO_NO_ERR:
+                continue
+
+            if ignore_unknown_paths and action_error_desc in PATH_ERRORS:
+                continue
+
+            raise ActionErrorHandler.from_error_description(action_error, action_error_desc)
 
     @staticmethod
-    def throw_if_error_at(response, index: int, ignore_unknown_path: bool = False) -> None:
-        """Raise the error for a specific action, or do nothing if it succeeded.
-
-        :param ignore_unknown_path: if True, silently ignore UnknownPathException
-        """
-        try:
-            action_error = response["reply"]["actions"][index]["error"]
-        except (KeyError, IndexError):
-            return
-
-        action_error_desc = action_error["description"]
-        if action_error_desc == XMO_NO_ERR:
-            return
-
-        exc = ActionErrorHandler.from_error_description(action_error, action_error_desc)
-        if ignore_unknown_path and isinstance(exc, UnknownPathException):
-            return
-        raise exc
-
-    @staticmethod
-    def from_error_description(action_error, action_error_desc):
+    def from_error_description(action_error, action_error_desc) -> BaseSagemcomException:
         """Create the correct exception from an error, for the caller to throw."""
         # pylint: disable=too-many-return-statements
 
@@ -87,7 +80,7 @@ class ActionErrorHandler:
         if action_error_desc == XMO_NON_WRITABLE_PARAMETER_ERR:
             return NonWritableParameterException(action_error)
 
-        if action_error_desc in (XMO_INVALID_PATH_ERR, XMO_UNKNOWN_PATH_ERR):
+        if action_error_desc in PATH_ERRORS:
             return UnknownPathException(action_error)
 
         if action_error_desc == XMO_MAX_SESSION_COUNT_ERR:

@@ -2,6 +2,7 @@
 
 # pylint: disable=protected-access
 
+from copy import deepcopy
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
@@ -9,7 +10,13 @@ from aiohttp import ClientSession
 
 from sagemcom_api.client import SagemcomClient
 from sagemcom_api.enums import EncryptionMethod
-from sagemcom_api.exceptions import AuthenticationException, UnknownPathException
+from sagemcom_api.exceptions import (
+    AuthenticationException,
+    InvalidSessionException,
+    LoginRetryErrorException,
+    NonWritableParameterException,
+    UnknownPathException,
+)
 
 
 @pytest.mark.asyncio
@@ -177,7 +184,7 @@ async def test_login_with_preconfigured_fixture(mock_client_sha512):
 
 @pytest.mark.asyncio
 async def test_get_value_by_xpath_suppresses_unknown_path(mock_session_factory, login_success_response, xpath_unknown_path_error_response):
-    """Test that suppress_action_errors=True returns None for UnknownPathException."""
+    """Test that ignore_unknown_paths=True returns None for UnknownPathException."""
     mock_session = mock_session_factory([login_success_response, xpath_unknown_path_error_response])
     client = SagemcomClient(
         host="192.168.1.1",
@@ -188,7 +195,7 @@ async def test_get_value_by_xpath_suppresses_unknown_path(mock_session_factory, 
     )
     await client.login()
 
-    result = await client.get_value_by_xpath("Device/NonExistent", suppress_action_errors=True)
+    result = await client.get_value_by_xpath("Device/NonExistent", ignore_unknown_paths=True)
 
     assert result is None
 
@@ -197,7 +204,7 @@ async def test_get_value_by_xpath_suppresses_unknown_path(mock_session_factory, 
 async def test_get_value_by_xpath_raises_unknown_path_when_not_suppressed(
     mock_session_factory, login_success_response, xpath_unknown_path_error_response
 ):
-    """Test that suppress_action_errors=False (default) raises UnknownPathException."""
+    """Test that ignore_unknown_paths=False (default) raises UnknownPathException."""
     mock_session = mock_session_factory([login_success_response, xpath_unknown_path_error_response])
     client = SagemcomClient(
         host="192.168.1.1",
@@ -216,7 +223,7 @@ async def test_get_value_by_xpath_raises_unknown_path_when_not_suppressed(
 async def test_get_value_by_xpath_still_raises_auth_error_when_suppressed(
     mock_session_factory, login_success_response, login_auth_error_response
 ):
-    """Test that suppress_action_errors=True still raises AuthenticationException."""
+    """Test that ignore_unknown_paths=True still raises AuthenticationException."""
     # Auth errors trigger one re-login and retry (max_tries=2) before propagating.
     mock_session = mock_session_factory([login_success_response, login_auth_error_response] * 2)
     client = SagemcomClient(
@@ -229,7 +236,7 @@ async def test_get_value_by_xpath_still_raises_auth_error_when_suppressed(
     await client.login()
 
     with pytest.raises(AuthenticationException):
-        await client.get_value_by_xpath("Device/DeviceInfo", suppress_action_errors=True)
+        await client.get_value_by_xpath("Device/DeviceInfo", ignore_unknown_paths=True)
 
     assert mock_session.post.call_count == 4
 
@@ -254,7 +261,7 @@ async def test_get_values_by_xpaths_suppresses_unknown_path_per_action(
             "mac_address": "Device/DeviceInfo/MACAddress",
             "model_number": "Device/DeviceInfo/ModelNumber",
         },
-        suppress_action_errors=True,
+        ignore_unknown_paths=True,
     )
 
     assert result["mac_address"] == "AA:BB:CC:DD:EE:FF"
@@ -280,7 +287,7 @@ async def test_get_values_by_xpaths_still_raises_auth_error_when_suppressed(
     with pytest.raises(AuthenticationException):
         await client.get_values_by_xpaths(
             {"mac_address": "Device/DeviceInfo/MACAddress"},
-            suppress_action_errors=True,
+            ignore_unknown_paths=True,
         )
 
     assert mock_session.post.call_count == 4
@@ -323,3 +330,139 @@ async def test_get_device_info_falls_back_when_aggregate_path_unknown(
     assert info.serial_number == "SN123456789"
     assert info.software_version == "1.2.3"
     assert info.manufacturer == "Sagemcom"
+
+
+def _reply(request_error: str, action_errors: list[str]) -> dict:
+    """Build a JSON-req reply whose actions carry no values."""
+    return {
+        "reply": {
+            "uid": 0,
+            "id": 1,
+            "error": {"code": 1, "description": request_error},
+            "actions": [
+                {"uid": i + 1, "id": i, "error": {"code": 1, "description": desc}, "callbacks": []} for i, desc in enumerate(action_errors)
+            ],
+            "events": [],
+        }
+    }
+
+
+def _md5_client(session) -> SagemcomClient:
+    return SagemcomClient(
+        host="192.168.1.1",
+        username="admin",
+        password="admin",
+        authentication_method=EncryptionMethod.MD5,
+        session=session,
+    )
+
+
+@pytest.mark.asyncio
+async def test_get_values_by_xpaths_ignores_invalid_path_per_action(
+    mock_session_factory, login_success_response, xpaths_mixed_errors_response
+):
+    """XMO_INVALID_PATH_ERR is treated as a missing path, like XMO_UNKNOWN_PATH_ERR."""
+    mixed_response = deepcopy(xpaths_mixed_errors_response)
+    mixed_response["reply"]["actions"][1]["error"] = {"code": 16777242, "description": "XMO_INVALID_PATH_ERR"}
+    client = _md5_client(mock_session_factory([login_success_response, mixed_response]))
+    await client.login()
+
+    result = await client.get_values_by_xpaths(
+        {"mac_address": "Device/DeviceInfo/MACAddress", "model_number": "Device/DeviceInfo/ModelNumber"},
+        ignore_unknown_paths=True,
+    )
+
+    assert result == {"mac_address": "AA:BB:CC:DD:EE:FF", "model_number": None}
+
+
+@pytest.mark.parametrize("ignore_unknown_paths", [False, True])
+@pytest.mark.asyncio
+async def test_request_level_auth_error_is_not_masked_by_action_placeholder(
+    mock_session_factory, login_success_response, ignore_unknown_paths
+):
+    """Request-level XMO_AUTHENTICATION_ERR raises, even when actions only report an unknown path."""
+    auth_error = _reply("XMO_AUTHENTICATION_ERR", ["XMO_UNKNOWN_PATH_ERR"])
+    mock_session = mock_session_factory([login_success_response, auth_error] * 2)
+    client = _md5_client(mock_session)
+    await client.login()
+
+    with pytest.raises(AuthenticationException):
+        await client.get_value_by_xpath("Device/DeviceInfo/ModelNumber", ignore_unknown_paths=ignore_unknown_paths)
+
+    # Re-login and retry once, as for action-level authentication errors.
+    assert mock_session.post.call_count == 4
+
+
+@pytest.mark.asyncio
+async def test_invalid_session_relogs_in_and_retries(
+    mock_session_factory, login_success_response, login_invalid_session_response, xpath_value_response
+):
+    """An invalidated session is transient: log in again and retry the request (#520)."""
+    mock_session = mock_session_factory(
+        [login_success_response, login_invalid_session_response, login_success_response, xpath_value_response]
+    )
+    client = _md5_client(mock_session)
+    await client.login()
+
+    value = await client.get_value_by_xpath("Device/WiFi/Radios/Radio[@uid='1']/Status", ignore_unknown_paths=True)
+
+    assert value == "UP"
+    assert mock_session.post.call_count == 4
+
+
+@pytest.mark.asyncio
+async def test_invalid_session_propagates_after_retry(mock_session_factory, login_success_response, login_invalid_session_response):
+    """A session that stays invalid surfaces as InvalidSessionException, not an auth failure."""
+    mock_session = mock_session_factory([login_success_response, login_invalid_session_response] * 2)
+    client = _md5_client(mock_session)
+    await client.login()
+
+    with pytest.raises(InvalidSessionException):
+        await client.get_value_by_xpath("Device/DeviceInfo")
+
+
+@pytest.mark.asyncio
+async def test_set_value_by_xpath_still_raises_action_errors(mock_session_factory):
+    """Requests other than getters keep raising action-level errors."""
+    client = _md5_client(mock_session_factory([_reply("XMO_REQUEST_ACTION_ERR", ["XMO_NON_WRITABLE_PARAMETER_ERR"])]))
+
+    with pytest.raises(NonWritableParameterException):
+        await client.set_value_by_xpath("Device/DeviceInfo/ModelNumber", "x")
+
+
+@pytest.mark.parametrize("request_error", ["XMO_REQUEST_ACTION_ERR", "XMO_LOGIN_RETRY_ERR"])
+@pytest.mark.asyncio
+async def test_login_raises_login_retry_error(mock_session_factory, request_error):
+    """A locked login raises LoginRetryErrorException, whether reported per action or per request."""
+    client = _md5_client(mock_session_factory([_reply(request_error, ["XMO_LOGIN_RETRY_ERR"])]))
+
+    with pytest.raises(LoginRetryErrorException):
+        await client.login()
+
+
+@pytest.mark.asyncio
+async def test_get_device_info_fallback_requires_mac_address(
+    mock_session_factory,
+    login_success_response,
+    xpath_unknown_path_error_response,
+    device_info_fallback_partial_response,
+):
+    """Missing optional attributes are tolerated, but the MAC address is not."""
+    fallback_response = deepcopy(device_info_fallback_partial_response)
+    fallback_response["reply"]["actions"][0]["error"] = {"code": 16777221, "description": "XMO_UNKNOWN_PATH_ERR"}
+    fallback_response["reply"]["actions"][0]["callbacks"] = []
+    client = _md5_client(mock_session_factory([login_success_response, xpath_unknown_path_error_response, fallback_response]))
+    await client.login()
+
+    with pytest.raises(UnknownPathException):
+        await client.get_device_info()
+
+
+@pytest.mark.parametrize("call", ["reboot", "run_speed_test"])
+@pytest.mark.asyncio
+async def test_non_getter_actions_raise_action_errors(mock_session_factory, call):
+    """Reboot and speed test surface action-level errors instead of returning them."""
+    client = _md5_client(mock_session_factory([_reply("XMO_REQUEST_ACTION_ERR", ["XMO_AUTHENTICATION_ERR"])]))
+
+    with pytest.raises(AuthenticationException):
+        await getattr(client, call)()

@@ -29,7 +29,6 @@ from .const import (
     DEFAULT_USER_AGENT,
     UINT_MAX,
     XMO_INVALID_SESSION_ERR,
-    XMO_REQUEST_ACTION_ERR,
     XMO_REQUEST_NO_ERR,
 )
 from .enums import EncryptionMethod
@@ -251,19 +250,13 @@ class SagemcomClient:
                 self._request_id = -1
                 raise InvalidSessionException(error)
 
-            # Error in one or more of the actions. Leave this to the layer
-            # above (via ActionErrorHandler), since a request may contain
-            # multiple actions and the caller may want to react per-action
-            # (e.g. suppress unknown-path errors for optional values).
-            if error["description"] == XMO_REQUEST_ACTION_ERR:
-                pass
-
             return result
 
-    async def __api_request_async(self, actions, priority=False, idempotent=True):
+    async def __api_request_async(self, actions, priority=False, idempotent=True, ignore_unknown_paths=False):
         """Build request to the internal JSON-req API.
 
         :param idempotent: set to False for actions that must not be resent after a dropped connection
+        :param ignore_unknown_paths: do not raise for actions whose path does not exist
         """
         self.__generate_request_id()
         self.__generate_nonce()
@@ -286,13 +279,15 @@ class SagemcomClient:
         try:
             post = self.__post if idempotent else self.__post_once
             result = await post(api_host, form_data)
-            return result
         except (
             ClientConnectorError,
             ClientOSError,
             ServerDisconnectedError,
         ) as exception:
             raise ConnectionError(str(exception)) from exception
+
+        ActionErrorHandler.throw_if_error(result, ignore_unknown_paths=ignore_unknown_paths)
+        return result
 
     async def login(self):
         """Login to the SagemCom F@st router using a username and password."""
@@ -329,8 +324,6 @@ class SagemcomClient:
         except (ClientConnectorError, ClientOSError) as exception:
             raise LoginConnectionException("Unable to connect to the device. Please check the host address.") from exception
 
-        ActionErrorHandler.throw_if_error(response)
-
         data = self.__get_response(response)
 
         if data["id"] is not None and data["nonce"] is not None:
@@ -344,8 +337,7 @@ class SagemcomClient:
         """Log out of the Sagemcom F@st device."""
         actions = {"id": 0, "method": "logOut"}
 
-        response = await self.__api_request_async([actions], False)
-        ActionErrorHandler.throw_if_error(response)
+        await self.__api_request_async([actions], False)
 
         self._session_id = -1
         self._server_nonce = ""
@@ -377,20 +369,15 @@ class SagemcomClient:
 
         return None
 
-    async def get_value_by_xpath(
-        self,
-        xpath: str,
-        options: dict | None = None,
-        suppress_action_errors: bool = False,
-    ) -> Any:
+    async def get_value_by_xpath(self, xpath: str, options: dict | None = None, ignore_unknown_paths: bool = False) -> Any:
         """Retrieve raw value from router using XPath.
 
         :param xpath: path expression
         :param options: optional options
-        :param suppress_action_errors: if True, return None instead of raising
-            when the path is unknown (other action errors are still raised)
+        :param ignore_unknown_paths: return None instead of raising UnknownPathException
+            when the path does not exist; other errors are still raised
         """
-        result = await self.get_values_by_xpaths({"value": xpath}, options, suppress_action_errors)
+        result = await self.get_values_by_xpaths({"value": xpath}, options, ignore_unknown_paths)
         return result["value"]
 
     @backoff.on_exception(
@@ -404,18 +391,13 @@ class SagemcomClient:
         max_tries=2,
         on_backoff=retry_login,
     )
-    async def get_values_by_xpaths(
-        self,
-        xpaths: dict[str, str],
-        options: dict | None = None,
-        suppress_action_errors: bool = False,
-    ) -> dict:
+    async def get_values_by_xpaths(self, xpaths: dict[str, str], options: dict | None = None, ignore_unknown_paths: bool = False) -> dict:
         """Retrieve raw values from router using XPath.
 
         :param xpaths: Dict of key to xpath expression
         :param options: optional options
-        :param suppress_action_errors: if True, unknown-path actions return None
-            instead of raising, while other action errors are still raised
+        :param ignore_unknown_paths: return None for each path that does not exist instead
+            of raising UnknownPathException; other errors are still raised
         """
         actions = [
             {
@@ -427,17 +409,8 @@ class SagemcomClient:
             for i, xpath in enumerate(xpaths.values())
         ]
 
-        response = await self.__api_request_async(actions, False)
-
-        if not suppress_action_errors:
-            ActionErrorHandler.throw_if_error(response)
-            values = [self.__get_response_value(response, i) for i in range(len(xpaths))]
-        else:
-            values = []
-            for i in range(len(xpaths)):
-                ActionErrorHandler.throw_if_error_at(response, i, ignore_unknown_path=True)
-                values.append(self.__get_response_value(response, i))
-
+        response = await self.__api_request_async(actions, False, ignore_unknown_paths=ignore_unknown_paths)
+        values = [self.__get_response_value(response, i) for i in range(len(xpaths))]
         data = dict(zip(xpaths.keys(), values, strict=True))
 
         return data
@@ -480,8 +453,6 @@ class SagemcomClient:
         ]
 
         response = await self.__api_request_async(actions, False)
-        ActionErrorHandler.throw_if_error(response)
-
         return response
 
     @backoff.on_exception(
@@ -510,10 +481,14 @@ class SagemcomClient:
                     "serial_number": "Device/DeviceInfo/SerialNumber",
                     "software_version": "Device/DeviceInfo/SoftwareVersion",
                 },
-                # missing values are returned as None when action errors are suppressed
-                suppress_action_errors=True,
+                # Some firmware (e.g. TalkTalk F5364) lacks optional leaves such as ModelNumber.
+                ignore_unknown_paths=True,
             )
             data["manufacturer"] = "Sagemcom"
+
+        # The MAC is the gateway's identity (DeviceInfo.id), so it cannot be optional.
+        if data["mac_address"] is None:
+            raise UnknownPathException("Device/DeviceInfo/MACAddress is not available")
 
         return DeviceInfo(**data)
 
@@ -577,8 +552,6 @@ class SagemcomClient:
         }
 
         response = await self.__api_request_async([actions], False)
-        ActionErrorHandler.throw_if_error(response)
-
         log_path = response["reply"]["actions"][0]["callbacks"][0]["parameters"]["uri"]
 
         log_uri = f"{self.protocol}://{self.host}{log_path}"
@@ -596,8 +569,6 @@ class SagemcomClient:
         }
 
         response = await self.__api_request_async([action], False, idempotent=False)
-        ActionErrorHandler.throw_if_error(response)
-
         data = self.__get_response_value(response)
 
         return data
@@ -612,10 +583,7 @@ class SagemcomClient:
                 "parameters": {"BlockTraffic": block_traffic},
             }
         ]
-        response = await self.__api_request_async(actions, False, idempotent=False)
-        ActionErrorHandler.throw_if_error(response)
-
-        return response
+        return await self.__api_request_async(actions, False, idempotent=False)
 
     async def get_speed_test_results(self) -> list[SpeedTestResult]:
         """Retrieve Speed Test results from Sagemcom F@st device."""
