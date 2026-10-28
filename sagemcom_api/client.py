@@ -22,34 +22,23 @@ from aiohttp import (
     TCPConnector,
 )
 
+from .action_error_exception_handler import ActionErrorHandler
 from .const import (
     API_ENDPOINT,
     DEFAULT_TIMEOUT,
     DEFAULT_USER_AGENT,
     UINT_MAX,
-    XMO_ACCESS_RESTRICTION_ERR,
-    XMO_AUTHENTICATION_ERR,
-    XMO_INVALID_PATH_ERR,
     XMO_INVALID_SESSION_ERR,
-    XMO_LOGIN_RETRY_ERR,
-    XMO_MAX_SESSION_COUNT_ERR,
-    XMO_NO_ERR,
-    XMO_NON_WRITABLE_PARAMETER_ERR,
-    XMO_REQUEST_ACTION_ERR,
     XMO_REQUEST_NO_ERR,
-    XMO_UNKNOWN_PATH_ERR,
 )
 from .enums import EncryptionMethod
 from .exceptions import (
-    AccessRestrictionException,
     AuthenticationException,
     BadRequestException,
     InvalidSessionException,
     LoginConnectionException,
     LoginRetryErrorException,
     LoginTimeoutException,
-    MaximumSessionCountException,
-    NonWritableParameterException,
     UnauthorizedException,
     UnknownException,
     UnknownPathException,
@@ -261,44 +250,13 @@ class SagemcomClient:
                 self._request_id = -1
                 raise InvalidSessionException(error)
 
-            # Error in one of the actions
-            if error["description"] == XMO_REQUEST_ACTION_ERR:
-                # pylint:disable=fixme
-                # TODO How to support multiple actions + error handling?
-                actions = result["reply"]["actions"]
-                for action in actions:
-                    action_error = action["error"]
-                    action_error_desc = action_error["description"]
-
-                    if action_error_desc == XMO_NO_ERR:
-                        continue
-
-                    if action_error_desc == XMO_AUTHENTICATION_ERR:
-                        raise AuthenticationException(action_error)
-
-                    if action_error_desc == XMO_ACCESS_RESTRICTION_ERR:
-                        raise AccessRestrictionException(action_error)
-
-                    if action_error_desc == XMO_NON_WRITABLE_PARAMETER_ERR:
-                        raise NonWritableParameterException(action_error)
-
-                    if action_error_desc in (XMO_INVALID_PATH_ERR, XMO_UNKNOWN_PATH_ERR):
-                        raise UnknownPathException(action_error)
-
-                    if action_error_desc == XMO_MAX_SESSION_COUNT_ERR:
-                        raise MaximumSessionCountException(action_error)
-
-                    if action_error_desc == XMO_LOGIN_RETRY_ERR:
-                        raise LoginRetryErrorException(action_error)
-
-                    raise UnknownException(action_error)
-
             return result
 
-    async def __api_request_async(self, actions, priority=False, idempotent=True):
+    async def __api_request_async(self, actions, priority=False, idempotent=True, ignore_unknown_paths=False):
         """Build request to the internal JSON-req API.
 
         :param idempotent: set to False for actions that must not be resent after a dropped connection
+        :param ignore_unknown_paths: do not raise for actions whose path does not exist
         """
         self.__generate_request_id()
         self.__generate_nonce()
@@ -321,13 +279,15 @@ class SagemcomClient:
         try:
             post = self.__post if idempotent else self.__post_once
             result = await post(api_host, form_data)
-            return result
         except (
             ClientConnectorError,
             ClientOSError,
             ServerDisconnectedError,
         ) as exception:
             raise ConnectionError(str(exception)) from exception
+
+        ActionErrorHandler.throw_if_error(result, ignore_unknown_paths=ignore_unknown_paths)
+        return result
 
     async def login(self):
         """Login to the SagemCom F@st router using a username and password."""
@@ -409,13 +369,15 @@ class SagemcomClient:
 
         return None
 
-    async def get_value_by_xpath(self, xpath: str, options: dict | None = None) -> dict:
+    async def get_value_by_xpath(self, xpath: str, options: dict | None = None, ignore_unknown_paths: bool = False) -> Any:
         """Retrieve raw value from router using XPath.
 
         :param xpath: path expression
         :param options: optional options
+        :param ignore_unknown_paths: return None instead of raising UnknownPathException
+            when the path does not exist; other errors are still raised
         """
-        result = await self.get_values_by_xpaths({"value": xpath}, options)
+        result = await self.get_values_by_xpaths({"value": xpath}, options, ignore_unknown_paths)
         return result["value"]
 
     @backoff.on_exception(
@@ -429,11 +391,13 @@ class SagemcomClient:
         max_tries=2,
         on_backoff=retry_login,
     )
-    async def get_values_by_xpaths(self, xpaths: dict[str, str], options: dict | None = None) -> dict:
+    async def get_values_by_xpaths(self, xpaths: dict[str, str], options: dict | None = None, ignore_unknown_paths: bool = False) -> dict:
         """Retrieve raw values from router using XPath.
 
         :param xpaths: Dict of key to xpath expression
         :param options: optional options
+        :param ignore_unknown_paths: return None for each path that does not exist instead
+            of raising UnknownPathException; other errors are still raised
         """
         actions = [
             {
@@ -445,7 +409,7 @@ class SagemcomClient:
             for i, xpath in enumerate(xpaths.values())
         ]
 
-        response = await self.__api_request_async(actions, False)
+        response = await self.__api_request_async(actions, False, ignore_unknown_paths=ignore_unknown_paths)
         values = [self.__get_response_value(response, i) for i in range(len(xpaths))]
         data = dict(zip(xpaths.keys(), values, strict=True))
 
@@ -516,9 +480,15 @@ class SagemcomClient:
                     "product_class": "Device/DeviceInfo/ProductClass",
                     "serial_number": "Device/DeviceInfo/SerialNumber",
                     "software_version": "Device/DeviceInfo/SoftwareVersion",
-                }
+                },
+                # Some firmware (e.g. TalkTalk F5364) lacks optional leaves such as ModelNumber.
+                ignore_unknown_paths=True,
             )
             data["manufacturer"] = "Sagemcom"
+
+        # The MAC is the gateway's identity (DeviceInfo.id), so it cannot be optional.
+        if data["mac_address"] is None:
+            raise UnknownPathException("Device/DeviceInfo/MACAddress is not available")
 
         return DeviceInfo(**data)
 
