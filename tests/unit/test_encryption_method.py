@@ -27,5 +27,14 @@ async def test_detection_moves_on_after_authentication_error(mock_session_factor
 
     method = await client.get_encryption_method()
 
-    assert method == EncryptionMethod.MD5_NONCE
+    assert method == EncryptionMethod.SHA512
     assert mock_session.post.call_count == 2
+
+
+@pytest.mark.asyncio
+async def test_detection_tries_md5_nonce_last(mock_session_factory, login_auth_error_response, login_success_response):
+    """MD5_NONCE is the rarest method, and every rejected login counts towards the router's login lock."""
+    mock_session = mock_session_factory([login_auth_error_response, login_auth_error_response, login_success_response])
+    client = SagemcomClient("192.168.1.1", "admin", "admin", session=mock_session)
+
+    assert await client.get_encryption_method() == EncryptionMethod.MD5_NONCE

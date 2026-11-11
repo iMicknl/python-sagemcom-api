@@ -148,6 +148,8 @@ If you are not sure which encryption method to use, you can leave it empty or pa
 
 `get_encryption_method` will return an `EncryptionMethod` when a match is found, `EncryptionMethod.NONE` when the router uses the REST API, and `None` if no method matches. Best would be to use this function only during your initial investigation.
 
+The methods are tried in the order MD5, SHA512, MD5_NONCE. Every method that does not match is a failed login on the router, and some firmware locks logins after a few of them.
+
 This function will throw a `LoginTimeoutException` when no match is found, since this is still a HTTP Time Out. This could caused by the wrong encryption method, but also by trying to connect to an inaccessible host.
 
 It will throw a `LoginRetryErrorException` when the router has locked logins after too many attempts. Wait for the lock to expire before trying again.
