@@ -34,6 +34,7 @@ The Sagemcom F@st series is used by multiple cable companies, where some cable c
 | Sagemcom F@st 5380           | TDC                        | md5                   |                               |
 | Sagemcom F@st 5566           | Bell (Home Hub 3000)       | md5                   | username: guest, password: "" |
 | Sagemcom F@st 5598           | YouFibre                   | None / New API        | username: admin, password: "" |
+| Sagemcom F@st 5670           | Magyar Telekom<sup>4</sup> | sha512                | username: admin               |
 | Sagemcom F@st 5688T          | Salt (FibreBox_X6)         | sha512                | username: admin               |
 | Sagemcom F@st 5689           | Bell (Home Hub 4000)       | md5                   | username: admin, password: "" |
 | Sagemcom F@st 5689E          | Bell (Giga Hub)            | sha512                | username: admin, password: "" |
@@ -48,6 +49,8 @@ The Sagemcom F@st series is used by multiple cable companies, where some cable c
 <sup>2</sup> If you run into `SSLV3_ALERT_HANDSHAKE_FAILURE` errors, see [here](docs/ssl-error.md) for a workaround.
 
 <sup>3</sup> Recent KPN Box 12 firmware replaced the Sagemcom API used by this library with a SoftAtHome API (`/ws`), which is not supported. Only older firmware works with this library, see [#391](https://github.com/iMicknl/python-sagemcom-api/issues/391).
+
+<sup>4</sup> Pass `EncryptionMethod.SHA512` explicitly instead of using `get_encryption_method()`. Detection tries MD5 first, and this firmware refuses logins for about a minute after the two failed attempts.
 
 > Contributions welcome. If you router model is supported by this package, but not in the list above, please create [an issue](https://github.com/iMicknl/python-sagemcom-api/issues/new) or pull request.
 

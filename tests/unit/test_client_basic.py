@@ -2,6 +2,7 @@
 
 # pylint: disable=protected-access
 
+import json
 from copy import deepcopy
 from unittest.mock import AsyncMock, MagicMock
 
@@ -61,7 +62,7 @@ async def test_response_with_invalid_utf8_is_parsed():
     session.post.return_value = response
     client = SagemcomClient(host="192.168.1.1", username="admin", password="admin", session=session)
 
-    result = await client._SagemcomClient__post("http://192.168.1.1/ws", {})
+    result = await client._SagemcomClient__send("http://192.168.1.1/ws", {})
 
     assert result["reply"]["value"] == "invalid � byte"
 
@@ -1277,3 +1278,43 @@ async def test_non_getter_actions_raise_action_errors(mock_session_factory, call
 
     with pytest.raises(AuthenticationException):
         await getattr(client, call)()
+
+
+@pytest.mark.asyncio
+async def test_get_logs_names_the_download_file(mock_session_factory):
+    """get_logs passes FileName like the vendor GUI; F@st 5670 firmware crashed and rebooted on empty parameters."""
+    uri_response = {
+        "reply": {
+            "error": {"description": "XMO_REQUEST_NO_ERR"},
+            "actions": [{"error": {"description": "XMO_NO_ERR"}, "callbacks": [{"parameters": {"uri": "/download/abc/log"}}]}],
+        }
+    }
+    mock_session = mock_session_factory([uri_response])
+    mock_session.get = AsyncMock(return_value=MagicMock(text=AsyncMock(return_value="11.11.2026 22:09:14 WRN PPPOE 0 terminated")))
+    client = SagemcomClient("192.168.1.1", "admin", "admin", EncryptionMethod.SHA512, session=mock_session)
+
+    logs = await client.get_logs()
+
+    request = json.loads(mock_session.post.call_args.kwargs["data"]["req"])["request"]
+    assert request["actions"][0]["parameters"] == {"FileName": "log"}
+    mock_session.get.assert_awaited_once_with("http://192.168.1.1/download/abc/log")
+    assert logs == "11.11.2026 22:09:14 WRN PPPOE 0 terminated"
+
+
+@pytest.mark.asyncio
+async def test_speed_test_results_empty_history(mock_session_factory, xpath_value_response):
+    """A router that never ran a speed test (F@st 5670) reports a history of empty strings, not a missing one."""
+    response = deepcopy(xpath_value_response)
+    empty_history = {
+        "Index": 0,
+        "Timestamp": "",
+        "SelectedServerAddress": "",
+        "BlockTraffic": "",
+        "Latency": "",
+        "Upload": "",
+        "Download": "",
+    }
+    response["reply"]["actions"][0]["callbacks"][0]["parameters"]["value"] = {"SpeedTest": {"History": empty_history}}
+    client = SagemcomClient("192.168.1.1", "admin", "admin", EncryptionMethod.SHA512, session=mock_session_factory([response]))
+
+    assert await client.get_speed_test_results() == []
