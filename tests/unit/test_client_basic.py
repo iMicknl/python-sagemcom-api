@@ -1299,3 +1299,22 @@ async def test_get_logs_names_the_download_file(mock_session_factory):
     assert request["actions"][0]["parameters"] == {"FileName": "log"}
     mock_session.get.assert_awaited_once_with("http://192.168.1.1/download/abc/log")
     assert logs == "11.11.2026 22:09:14 WRN PPPOE 0 terminated"
+
+
+@pytest.mark.asyncio
+async def test_speed_test_results_empty_history(mock_session_factory, xpath_value_response):
+    """A router that never ran a speed test (F@st 5670) reports a history of empty strings, not a missing one."""
+    response = deepcopy(xpath_value_response)
+    empty_history = {
+        "Index": 0,
+        "Timestamp": "",
+        "SelectedServerAddress": "",
+        "BlockTraffic": "",
+        "Latency": "",
+        "Upload": "",
+        "Download": "",
+    }
+    response["reply"]["actions"][0]["callbacks"][0]["parameters"]["value"] = {"SpeedTest": {"History": empty_history}}
+    client = SagemcomClient("192.168.1.1", "admin", "admin", EncryptionMethod.SHA512, session=mock_session_factory([response]))
+
+    assert await client.get_speed_test_results() == []

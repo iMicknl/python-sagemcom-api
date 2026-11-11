@@ -921,7 +921,8 @@ class SagemcomClient:
         """Retrieve Speed Test results from Sagemcom F@st device."""
         ret = await self.get_value_by_xpath("Device/IP/Diagnostics/SpeedTest")
         history = ret["speed_test"]["history"]
-        if history:
+        # A router that never ran a test reports the history fields as empty strings.
+        if history and history["timestamp"]:
             timestamps = (int(k) for k in history["timestamp"].split(","))
             server_address = history["selected_server_address"].split(",")
             block_traffic = history["block_traffic"].split(",")
