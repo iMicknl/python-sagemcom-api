@@ -578,7 +578,9 @@ class SagemcomClient:
             await self.__rest_request("POST", "/api/v1/logout", data={"_": ""})
         else:
             actions = {"id": 0, "method": "logOut"}
-            await self.__api_request_async([actions], False)
+            # A logout that is resent after its reply was lost finds the session already closed.
+            with contextlib.suppress(InvalidSessionException):
+                await self.__api_request_async([actions], False)
 
         self._session_id = -1
         self._server_nonce = ""

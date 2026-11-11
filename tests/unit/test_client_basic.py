@@ -282,6 +282,18 @@ async def test_login_authentication_error(mock_session_factory, login_auth_error
 
 
 @pytest.mark.asyncio
+async def test_logout_accepts_an_already_closed_session(mock_session_factory, login_success_response, login_invalid_session_response):
+    """A retried logout whose first attempt went through finds the session closed, which is what logout is for."""
+    mock_session = mock_session_factory([login_success_response, login_invalid_session_response])
+    client = SagemcomClient("192.168.1.1", "admin", "admin", EncryptionMethod.SHA512, session=mock_session)
+    await client.login()
+
+    await client.logout()
+
+    assert client._session_id == -1
+
+
+@pytest.mark.asyncio
 async def test_get_value_by_xpath_url_encoding(mock_session_factory, login_success_response, xpath_value_response):
     """Test XPath values are URL-encoded with safe characters preserved.
 
