@@ -61,7 +61,7 @@ async def test_response_with_invalid_utf8_is_parsed():
     session.post.return_value = response
     client = SagemcomClient(host="192.168.1.1", username="admin", password="admin", session=session)
 
-    result = await client._SagemcomClient__post("http://192.168.1.1/ws", {})
+    result = await client._SagemcomClient__send("http://192.168.1.1/ws", {})
 
     assert result["reply"]["value"] == "invalid � byte"
 

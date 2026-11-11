@@ -234,21 +234,44 @@ class SagemcomClient:
         (ClientConnectorError, ClientOSError, ServerDisconnectedError),
         max_tries=5,
     )
-    async def __post(self, url, data):
+    async def __post(self, url, actions, priority):
         """Post a request that is safe to repeat, retrying on connection errors."""
-        return await self.__send(url, data)
+        return await self.__send(url, self.__build_request(actions, priority))
 
     @backoff.on_exception(
         backoff.expo,
         ClientConnectorError,
         max_tries=5,
     )
-    async def __post_once(self, url, data):
+    async def __post_once(self, url, actions, priority):
         """Post a request that must not run twice, retrying only when the connection could not be opened.
 
         A dropped connection after sending may mean the router already executed the action (e.g. a reboot).
         """
-        return await self.__send(url, data)
+        return await self.__send(url, self.__build_request(actions, priority))
+
+    def __build_request(self, actions, priority):
+        """Build the signed form data for one attempt.
+
+        Each attempt gets its own request ID, as the vendor GUI does: a router that already handled
+        a request whose reply was lost rejects a resend of the same ID with XMO_REQUEST_ID_ERR.
+        """
+        self.__generate_request_id()
+        self.__generate_nonce()
+        self.__generate_auth_key()
+
+        payload = {
+            "request": {
+                "id": self._request_id,
+                "session-id": int(self._session_id),
+                "priority": priority,
+                "actions": actions,
+                "cnonce": self._current_nonce,
+                "auth-key": self._auth_key,
+            }
+        }
+
+        return {"req": json.dumps(payload, separators=(",", ":"))}
 
     # pylint: disable=too-many-branches
     async def __send(self, url, data):
@@ -290,27 +313,11 @@ class SagemcomClient:
         :param idempotent: set to False for actions that must not be resent after a dropped connection
         :param ignore_unknown_paths: do not raise for actions whose path does not exist
         """
-        self.__generate_request_id()
-        self.__generate_nonce()
-        self.__generate_auth_key()
-
         api_host = f"{self.protocol}://{self.host}{API_ENDPOINT}"
 
-        payload = {
-            "request": {
-                "id": self._request_id,
-                "session-id": int(self._session_id),
-                "priority": priority,
-                "actions": actions,
-                "cnonce": self._current_nonce,
-                "auth-key": self._auth_key,
-            }
-        }
-
-        form_data = {"req": json.dumps(payload, separators=(",", ":"))}
         try:
             post = self.__post if idempotent else self.__post_once
-            result = await post(api_host, form_data)
+            result = await post(api_host, actions, priority)
         except (
             ClientConnectorError,
             ClientOSError,

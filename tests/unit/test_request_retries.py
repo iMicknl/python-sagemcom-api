@@ -38,6 +38,7 @@ class FlakyRouter:
         """Drop the first `drops` connections after reading the request."""
         self.drops = drops
         self.methods: list[str] = []
+        self.request_ids: list[int] = []
         self.server: asyncio.Server | None = None
 
     async def _handle(self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter) -> None:
@@ -46,6 +47,7 @@ class FlakyRouter:
         body = await reader.readexactly(length)
         request = json.loads(urllib.parse.parse_qs(body.decode())["req"][0])["request"]
         self.methods.extend(action["method"] for action in request["actions"])
+        self.request_ids.append(request["id"])
 
         if len(self.methods) <= self.drops:
             writer.transport.abort()  # The router acted on the request, then went away without replying.
@@ -95,3 +97,16 @@ async def test_read_is_still_retried_after_disconnect(monkeypatch):
 
     assert value == "ok"
     assert router.methods == ["getValue", "getValue"]
+
+
+@pytest.mark.asyncio
+async def test_retry_after_disconnect_uses_a_new_request_id(monkeypatch):
+    """A router that already handled the dropped request rejects its ID as a replay, so the retry needs a new one."""
+    monkeypatch.setattr(asyncio, "sleep", AsyncMock())  # skip the backoff delay
+    router = FlakyRouter(drops=1)
+    async with router as host, ClientSession(timeout=ClientTimeout(total=10)) as session:
+        client = SagemcomClient(host, "admin", "admin", EncryptionMethod.MD5, session=session)
+
+        await client.get_value_by_xpath("Device")
+
+    assert router.request_ids == [0, 1]
