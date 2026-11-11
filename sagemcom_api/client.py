@@ -223,8 +223,8 @@ class SagemcomClient:
         except IndexError:
             value = None
 
-        # Rewrite result to snake_case
-        if value is not None:
+        # Rewrite keys to snake_case. A plain value (string, boolean, number) is returned as the router sent it.
+        if isinstance(value, (dict, list)):
             value = humps.decamelize(value)
 
         return value

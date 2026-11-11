@@ -344,6 +344,20 @@ async def test_get_value_by_xpath_invalid_path(mock_session_factory, xpath_inval
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("value", ["SGFm100330", "MyHomeWiFi", True, False])
+async def test_get_value_by_xpath_returns_plain_values_unchanged(mock_session_factory, xpath_value_response, value):
+    """Only keys are rewritten to snake_case, a plain value comes back as the router sent it."""
+    response = deepcopy(xpath_value_response)
+    response["reply"]["actions"][0]["callbacks"][0]["parameters"]["value"] = value
+    client = SagemcomClient("192.168.1.1", "admin", "admin", EncryptionMethod.SHA512, session=mock_session_factory([response]))
+
+    result = await client.get_value_by_xpath("Device/DeviceInfo/SoftwareVersion")
+
+    assert result == value
+    assert type(result) is type(value)
+
+
+@pytest.mark.asyncio
 async def test_login_with_preconfigured_fixture(mock_client_sha512):
     """Test login using pre-configured client fixture.
 
