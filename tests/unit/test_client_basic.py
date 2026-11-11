@@ -2,6 +2,7 @@
 
 # pylint: disable=protected-access
 
+import json
 from copy import deepcopy
 from unittest.mock import AsyncMock, MagicMock
 
@@ -1277,3 +1278,24 @@ async def test_non_getter_actions_raise_action_errors(mock_session_factory, call
 
     with pytest.raises(AuthenticationException):
         await getattr(client, call)()
+
+
+@pytest.mark.asyncio
+async def test_get_logs_names_the_download_file(mock_session_factory):
+    """get_logs passes FileName like the vendor GUI; F@st 5670 firmware crashed and rebooted on empty parameters."""
+    uri_response = {
+        "reply": {
+            "error": {"description": "XMO_REQUEST_NO_ERR"},
+            "actions": [{"error": {"description": "XMO_NO_ERR"}, "callbacks": [{"parameters": {"uri": "/download/abc/log"}}]}],
+        }
+    }
+    mock_session = mock_session_factory([uri_response])
+    mock_session.get = AsyncMock(return_value=MagicMock(text=AsyncMock(return_value="11.11.2026 22:09:14 WRN PPPOE 0 terminated")))
+    client = SagemcomClient("192.168.1.1", "admin", "admin", EncryptionMethod.SHA512, session=mock_session)
+
+    logs = await client.get_logs()
+
+    request = json.loads(mock_session.post.call_args.kwargs["data"]["req"])["request"]
+    assert request["actions"][0]["parameters"] == {"FileName": "log"}
+    mock_session.get.assert_awaited_once_with("http://192.168.1.1/download/abc/log")
+    assert logs == "11.11.2026 22:09:14 WRN PPPOE 0 terminated"

@@ -876,6 +876,8 @@ class SagemcomClient:
             "id": 0,
             "method": "getVendorLogDownloadURI",
             "xpath": urllib.parse.quote("Device/DeviceInfo/VendorLogFiles/VendorLogFile[@uid='1']"),
+            # The vendor GUI always names the download. F@st 5670 firmware crashed and rebooted on empty parameters.
+            "parameters": {"FileName": "log"},
         }
 
         response = await self.__api_request_async([actions], False)
