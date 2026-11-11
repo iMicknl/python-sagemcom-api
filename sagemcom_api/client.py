@@ -622,6 +622,10 @@ class SagemcomClient:
                 else:
                     await self.login()
 
+                # Firmware that allows a single session (F@st 5670) rejects the caller's login while this one is open.
+                with contextlib.suppress(BaseSagemcomException, ConnectionError, TimeoutError):
+                    await self.logout()
+
                 self._server_nonce = ""
                 self._session_id = 0
                 self._request_id = -1
