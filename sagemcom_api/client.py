@@ -602,9 +602,8 @@ class SagemcomClient:
         if self.api_mode == ApiMode.REST:
             return EncryptionMethod.NONE
 
-        for encryption_method in EncryptionMethod:
-            if encryption_method == EncryptionMethod.NONE:
-                continue
+        # SHA512 goes before MD5_NONCE: it is far more common, and every rejected login counts towards the router's login lock.
+        for encryption_method in (EncryptionMethod.MD5, EncryptionMethod.SHA512, EncryptionMethod.MD5_NONCE):
             try:
                 self.authentication_method = encryption_method
                 self._password_hash = self.__generate_hash(self.password, encryption_method)
